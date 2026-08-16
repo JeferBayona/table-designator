@@ -8,6 +8,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalGuestsCount = document.getElementById('total-guests-count');
     const tablesFilledCount = document.getElementById('tables-filled-count');
     const resetBtn = document.getElementById('reset-btn');
+    const exportBtn = document.getElementById('export-btn');
+    
+    // Toggle elements
+    const modeToggle = document.getElementById('assignment-mode-toggle');
+    const modeStatusText = document.getElementById('mode-status-text');
+    const tablesSectionContainer = document.getElementById('tables-section-container');
+    const tablesStatCard = document.getElementById('tables-stat-card');
+    const tableCols = document.querySelectorAll('.table-col');
+
+    // Attendance List
+    const attendanceListBody = document.getElementById('attendance-list-body');
     
     // QR Code elements
     const showQrBtn = document.getElementById('show-qr-btn');
@@ -19,11 +30,71 @@ document.addEventListener('DOMContentLoaded', () => {
     const TOTAL_TABLES = 10;
     const MAX_CAPACITY = 4;
     let qrCode = null;
+    let attendeesData = [];
+    let isTableAssignmentEnabled = false;
 
-    // Listen for real-time updates
+    // Listen to Global Settings
+    db.collection('settings').doc('event').onSnapshot(doc => {
+        if (doc.exists) {
+            isTableAssignmentEnabled = doc.data().tableAssignmentEnabled || false;
+        } else {
+            // Initialize if not exists
+            db.collection('settings').doc('event').set({ tableAssignmentEnabled: false });
+            isTableAssignmentEnabled = false;
+        }
+
+        // Update UI based on mode
+        modeToggle.checked = isTableAssignmentEnabled;
+        modeStatusText.textContent = `Random Table Assignment: ${isTableAssignmentEnabled ? 'ON' : 'OFF'}`;
+        
+        if (isTableAssignmentEnabled) {
+            tablesSectionContainer.classList.remove('hidden');
+            tablesStatCard.style.display = 'block';
+            document.querySelectorAll('.table-col').forEach(el => el.classList.remove('hidden'));
+        } else {
+            tablesSectionContainer.classList.add('hidden');
+            tablesStatCard.style.display = 'none';
+            document.querySelectorAll('.table-col').forEach(el => el.classList.add('hidden'));
+        }
+    });
+
+    // Handle Toggle Change
+    modeToggle.addEventListener('change', (e) => {
+        db.collection('settings').doc('event').update({
+            tableAssignmentEnabled: e.target.checked
+        }).catch(err => console.error("Error updating settings:", err));
+    });
+
+    // Listen for real-time attendees
+    db.collection('attendees').orderBy('timestamp', 'asc').onSnapshot(snapshot => {
+        attendeesData = [];
+        attendanceListBody.innerHTML = '';
+        let count = 0;
+
+        snapshot.forEach(doc => {
+            count++;
+            const data = doc.data();
+            attendeesData.push(data);
+            
+            const timeString = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString() : 'N/A';
+            const tableString = data.tableNumber ? `Table ${data.tableNumber}` : '-';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${count}</td>
+                <td><strong>${data.name}</strong></td>
+                <td>${timeString}</td>
+                <td class="table-col ${isTableAssignmentEnabled ? '' : 'hidden'}">${tableString}</td>
+            `;
+            attendanceListBody.appendChild(tr);
+        });
+
+        totalGuestsCount.textContent = count;
+    });
+
+    // Listen for real-time tables
     db.collection('tables').onSnapshot(snapshot => {
         let tablesData = {};
-        let totalGuests = 0;
         let fullTables = 0;
 
         snapshot.forEach(doc => {
@@ -36,14 +107,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const tableId = i.toString();
             const data = tablesData[tableId] || { count: 0, guests: [] };
             
-            totalGuests += data.count;
             if (data.count === MAX_CAPACITY) fullTables++;
-
             renderTableCard(tableId, data);
         }
 
-        // Update stats
-        totalGuestsCount.textContent = `${totalGuests} / ${TOTAL_TABLES * MAX_CAPACITY}`;
         tablesFilledCount.textContent = `${fullTables} / ${TOTAL_TABLES}`;
     });
 
@@ -74,20 +141,50 @@ document.addEventListener('DOMContentLoaded', () => {
         tablesGrid.appendChild(card);
     }
 
+    // Export to Excel/CSV
+    exportBtn.addEventListener('click', () => {
+        if (attendeesData.length === 0) {
+            alert("No attendees to export yet!");
+            return;
+        }
+
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "No.,Name,Time Checked In,Assigned Table\n";
+
+        attendeesData.forEach((row, index) => {
+            const timeString = row.timestamp ? new Date(row.timestamp.toDate()).toLocaleString() : 'N/A';
+            const tableString = row.tableNumber || 'N/A';
+            // Escape names with commas
+            const name = `"${row.name.replace(/"/g, '""')}"`;
+            
+            csvContent += `${index + 1},${name},"${timeString}",${tableString}\n`;
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `attendance_list_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
     // Reset functionality
     resetBtn.addEventListener('click', async () => {
-        if (confirm('Are you sure you want to reset ALL tables? This will delete all current assignments.')) {
+        if (confirm('Are you sure you want to reset ALL tables and DELETE the attendance list? Export your list first!')) {
             resetBtn.disabled = true;
             resetBtn.textContent = 'Resetting...';
             
             try {
-                // To reset, we just delete all documents in the 'tables' collection
-                const snapshot = await db.collection('tables').get();
                 const batch = db.batch();
                 
-                snapshot.forEach(doc => {
-                    batch.delete(doc.ref);
-                });
+                // Delete all tables
+                const tablesSnapshot = await db.collection('tables').get();
+                tablesSnapshot.forEach(doc => batch.delete(doc.ref));
+                
+                // Delete all attendees
+                const attendeesSnapshot = await db.collection('attendees').get();
+                attendeesSnapshot.forEach(doc => batch.delete(doc.ref));
                 
                 await batch.commit();
                 alert('Event successfully reset!');
@@ -96,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('An error occurred while resetting.');
             } finally {
                 resetBtn.disabled = false;
-                resetBtn.textContent = 'Reset All Tables';
+                resetBtn.textContent = 'Reset Event';
             }
         }
     });
@@ -105,7 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
     showQrBtn.addEventListener('click', () => {
         qrModal.classList.remove('hidden');
         
-        // The URL guests should visit is just the current URL without admin.html
         let appUrl = window.location.href.replace('admin.html', 'index.html');
         if (!appUrl.includes('index.html')) {
             appUrl += appUrl.endsWith('/') ? 'index.html' : '/index.html';
@@ -113,7 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         qrUrlDisplay.textContent = appUrl;
 
-        // Generate QR code if not already generated
         if (!qrCode) {
             qrCode = new QRCode(qrcodeContainer, {
                 text: appUrl,
@@ -126,13 +221,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    closeBtn.addEventListener('click', () => {
-        qrModal.classList.add('hidden');
-    });
-
+    closeBtn.addEventListener('click', () => qrModal.classList.add('hidden'));
     window.addEventListener('click', (e) => {
-        if (e.target === qrModal) {
-            qrModal.classList.add('hidden');
-        }
+        if (e.target === qrModal) qrModal.classList.add('hidden');
     });
 });

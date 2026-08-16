@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Table Assignment</title>
+    <title>Admin Dashboard - Event System</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     
@@ -17,26 +17,62 @@
 <body class="admin-body">
     <div class="admin-container">
         <header class="admin-header">
-            <h1>Organizer Dashboard</h1>
+            <div>
+                <h1>Organizer Dashboard</h1>
+                <div class="mode-toggle">
+                    <label class="switch">
+                        <input type="checkbox" id="assignment-mode-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                    <span id="mode-status-text">Random Table Assignment: OFF</span>
+                </div>
+            </div>
             <div class="admin-actions">
+                <button id="export-btn" class="primary-btn" style="width:auto; padding: 10px 20px;">Export Excel</button>
                 <button id="show-qr-btn" class="secondary-btn">Show QR Code</button>
-                <button id="reset-btn" class="danger-btn">Reset All Tables</button>
+                <button id="reset-btn" class="danger-btn">Reset Event</button>
             </div>
         </header>
 
         <div id="stats-panel" class="stats-panel">
             <div class="stat-card">
-                <h3>Total Guests</h3>
-                <p id="total-guests-count">0 / 40</p>
+                <h3>Total Checked-In</h3>
+                <p id="total-guests-count">0</p>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" id="tables-stat-card" style="display: none;">
                 <h3>Tables Filled</h3>
                 <p id="tables-filled-count">0 / 10</p>
             </div>
         </div>
 
-        <div id="tables-grid" class="tables-grid">
-            <!-- Tables will be rendered here dynamically -->
+        <div class="admin-content-grid">
+            <!-- Master Attendance List -->
+            <div class="attendance-section">
+                <h2>Attendance List</h2>
+                <div class="table-responsive">
+                    <table class="attendance-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Time</th>
+                                <th class="table-col hidden">Table</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-list-body">
+                            <!-- Attendees go here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Table Layout (Visible only if mode is ON) -->
+            <div class="tables-section hidden" id="tables-section-container">
+                <h2>Table Assignments</h2>
+                <div id="tables-grid" class="tables-grid">
+                    <!-- Tables render here -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -44,7 +80,7 @@
     <div id="qr-modal" class="modal hidden">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
-            <h2>Scan to get your table!</h2>
+            <h2>Scan to check in!</h2>
             <div id="qrcode"></div>
             <p id="qr-url-display"></p>
         </div>

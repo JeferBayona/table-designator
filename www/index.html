@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Check-in</title>
+    <title>Ikthus Event Organizer</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     
@@ -31,6 +31,7 @@
 
         <div id="app-content" class="hidden">
             <header>
+                <img src="assets/logo.jpg" alt="Ikthus Logo" style="width: 80px; height: 80px; border-radius: 16px; margin-bottom: 10px;">
                 <h1 id="event-title-display">Welcome to the Event</h1>
                 <p>Please enter your name to check in.</p>
             </header>
@@ -39,8 +40,9 @@
                 <div class="card" id="registration-card">
                     <form id="assignment-form">
                         <div class="form-group">
-                            <label for="guest-name">Full Name</label>
-                            <input type="text" id="guest-name" name="guest-name" placeholder="e.g. John Doe" required autocomplete="off">
+                            <label for="guest-name">Your Name</label>
+                            <input type="text" id="guest-name" placeholder="e.g. John Doe" required list="guest-suggestions">
+                            <datalist id="guest-suggestions"></datalist>
                         </div>
                         <button type="submit" id="submit-btn" class="primary-btn">Check In</button>
                         <p id="error-message" class="error hidden"></p>

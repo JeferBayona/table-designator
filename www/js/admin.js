@@ -118,6 +118,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Load global guest suggestions for manual check-in
+    db.collection('guests').get().then(snapshot => {
+        const datalist = document.getElementById('guest-suggestions');
+        if (datalist) {
+            snapshot.forEach(doc => {
+                const option = document.createElement('option');
+                option.value = doc.data().name;
+                datalist.appendChild(option);
+            });
+        }
+    });
+
     function loadEvent(eventId) {
         activeEventId = eventId;
         dashboardContent.classList.remove('hidden');
@@ -133,6 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
             activeEventTitle.textContent = data.title;
             activeEventDate.textContent = data.date;
             isTableAssignmentEnabled = data.tableAssignmentEnabled || false;
+            
+            // Set dynamic total tables (default 10)
+            const dynamicTotalTables = data.totalTables || 10;
+            document.getElementById('total-tables-setting').value = dynamicTotalTables;
+            // Store globally so tables listener can use it
+            window.currentTotalTables = dynamicTotalTables;
 
             modeToggle.checked = isTableAssignmentEnabled;
             modeStatusText.textContent = `Random Table Assignment: ${isTableAssignmentEnabled ? 'ON' : 'OFF'}`;
@@ -157,17 +175,20 @@ document.addEventListener('DOMContentLoaded', () => {
             snapshot.forEach(doc => {
                 count++;
                 const data = doc.data();
-                attendeesData.push(data);
+                attendeesData.push({ id: doc.id, ...data });
                 
-                const timeString = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString() : 'N/A';
-                const tableString = data.tableNumber ? `Table ${data.tableNumber}` : '-';
+                const timeString = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString() : 'N/A';
+                const tableString = data.tableNumber ? `Table ${data.tableNumber}` : 'Unassigned';
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${count}</td>
-                    <td><strong>${data.name}</strong></td>
+                    <td>${data.name}</td>
                     <td>${timeString}</td>
                     <td class="table-col ${isTableAssignmentEnabled ? '' : 'hidden'}">${tableString}</td>
+                    <td>
+                        <button class="edit-btn secondary-btn" data-id="${doc.id}" data-name="${data.name}" data-table="${data.tableNumber || ''}" style="padding: 4px 8px; font-size: 12px; margin-right: 5px;">Edit</button>
+                        <button class="delete-btn primary-btn" data-id="${doc.id}" data-table="${data.tableNumber || ''}" data-name="${data.name}" style="padding: 4px 8px; font-size: 12px; background-color: var(--danger);">Delete</button>
+                    </td>
                 `;
                 attendanceListBody.appendChild(tr);
             });
@@ -182,9 +203,10 @@ document.addEventListener('DOMContentLoaded', () => {
             snapshot.forEach(doc => tablesData[doc.id] = doc.data());
             tablesGrid.innerHTML = ''; 
 
-            // Calculate max table number based on data, defaulting to at least TOTAL_TABLES (10)
+            const targetTotalTables = window.currentTotalTables || TOTAL_TABLES;
+            // Calculate max table number based on data, defaulting to at least the set target total
             const tableIds = Object.keys(tablesData).map(id => parseInt(id, 10));
-            const maxTable = Math.max(TOTAL_TABLES, ...tableIds, 0);
+            const maxTable = Math.max(targetTotalTables, ...tableIds, 0);
 
             for (let i = 1; i <= maxTable; i++) {
                 const tableId = i.toString();
@@ -192,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.count === MAX_CAPACITY) fullTables++;
                 renderTableCard(tableId, data);
             }
-            tablesFilledCount.textContent = `${fullTables} / ${maxTable}`;
+            tablesFilledCount.textContent = `${fullTables} / ${targetTotalTables}`;
         });
     }
 
@@ -229,6 +251,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }).catch(err => console.error(err));
     });
 
+    // Save total tables config
+    document.getElementById('save-tables-btn').addEventListener('click', () => {
+        if (!activeEventId) return;
+        const newTotal = parseInt(document.getElementById('total-tables-setting').value, 10);
+        if (newTotal > 0) {
+            db.collection('events').doc(activeEventId).update({
+                totalTables: newTotal
+            }).then(() => alert("Total tables updated successfully!"))
+              .catch(err => console.error(err));
+        }
+    });
+
     // Export to Excel/CSV
     exportBtn.addEventListener('click', () => {
         if (attendeesData.length === 0) {
@@ -249,10 +283,112 @@ document.addEventListener('DOMContentLoaded', () => {
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `${activeEventId}_attendance.csv`);
+        link.setAttribute("download", `attendance_${activeEventTitle.textContent}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    });
+
+    // Handle Edit / Delete Attendee
+    attendanceListBody.addEventListener('click', async (e) => {
+        if (!activeEventId) return;
+
+        const target = e.target;
+        if (target.classList.contains('delete-btn')) {
+            const id = target.getAttribute('data-id');
+            const name = target.getAttribute('data-name');
+            const table = target.getAttribute('data-table');
+
+            if (confirm(`Are you sure you want to delete ${name}?`)) {
+                try {
+                    if (table) {
+                        // Remove from table
+                        await db.runTransaction(async (t) => {
+                            const tableRef = db.collection('events').doc(activeEventId).collection('tables').doc(table);
+                            const doc = await t.get(tableRef);
+                            if (doc.exists) {
+                                const data = doc.data();
+                                const newGuests = data.guests.filter(g => g !== name);
+                                t.update(tableRef, {
+                                    count: Math.max(0, data.count - 1),
+                                    guests: newGuests
+                                });
+                            }
+                        });
+                    }
+                    // Delete attendee record
+                    await db.collection('events').doc(activeEventId).collection('attendees').doc(id).delete();
+                } catch (err) {
+                    console.error("Error deleting:", err);
+                    alert("Failed to delete attendee.");
+                }
+            }
+        }
+
+        if (target.classList.contains('edit-btn')) {
+            const id = target.getAttribute('data-id');
+            const oldName = target.getAttribute('data-name');
+            const oldTable = target.getAttribute('data-table');
+
+            const newName = prompt("Edit Guest Name:", oldName);
+            if (newName === null) return;
+            
+            const newTableRaw = prompt("Edit Assigned Table Number (leave blank to unassign):", oldTable);
+            if (newTableRaw === null) return;
+            const newTable = newTableRaw.trim();
+
+            try {
+                // If table changed, we must transactionally swap tables
+                if (oldTable !== newTable) {
+                    await db.runTransaction(async (t) => {
+                        // Remove from old table
+                        if (oldTable) {
+                            const oldTableRef = db.collection('events').doc(activeEventId).collection('tables').doc(oldTable);
+                            const oldDoc = await t.get(oldTableRef);
+                            if (oldDoc.exists) {
+                                const data = oldDoc.data();
+                                const newGuests = data.guests.filter(g => g !== oldName);
+                                t.update(oldTableRef, {
+                                    count: Math.max(0, data.count - 1),
+                                    guests: newGuests
+                                });
+                            }
+                        }
+                        // Add to new table
+                        if (newTable) {
+                            const newTableRef = db.collection('events').doc(activeEventId).collection('tables').doc(newTable);
+                            const newDoc = await t.get(newTableRef);
+                            const data = newDoc.exists ? newDoc.data() : { count: 0, guests: [] };
+                            t.set(newTableRef, {
+                                count: data.count + 1,
+                                guests: [...data.guests, newName.trim()]
+                            });
+                        }
+                    });
+                } else if (oldName !== newName.trim() && oldTable) {
+                    // Name changed but table same -> update name in table array
+                    await db.runTransaction(async (t) => {
+                        const tableRef = db.collection('events').doc(activeEventId).collection('tables').doc(oldTable);
+                        const doc = await t.get(tableRef);
+                        if (doc.exists) {
+                            const data = doc.data();
+                            const newGuests = data.guests.map(g => g === oldName ? newName.trim() : g);
+                            t.update(tableRef, { guests: newGuests });
+                        }
+                    });
+                }
+
+                // Update attendee record
+                await db.collection('events').doc(activeEventId).collection('attendees').doc(id).update({
+                    name: newName.trim(),
+                    tableNumber: newTable || null
+                });
+
+            } catch (err) {
+                console.error("Error editing:", err);
+                alert("Failed to edit attendee.");
+            }
+        }
     });
 
     // Reset Event
@@ -379,6 +515,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 });
             }
+
+            // Record guest globally for auto-suggest
+            db.collection('guests').doc(guestName.toLowerCase().replace(/[^a-z0-9]/g, '')).set({
+                name: guestName
+            }, { merge: true }).catch(console.error);
 
             // Add to attendees list
             await db.collection('events').doc(activeEventId).collection('attendees').add({

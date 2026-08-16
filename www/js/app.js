@@ -48,6 +48,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         db.collection('events').doc(eventId).onSnapshot(doc => {
             if (doc.exists) {
                 isTableAssignmentEnabled = doc.data().tableAssignmentEnabled || false;
+                window.currentTotalTables = doc.data().totalTables || 10;
+            }
+        });
+
+        // Load global guest suggestions
+        db.collection('guests').get().then(snapshot => {
+            const datalist = document.getElementById('guest-suggestions');
+            if (datalist) {
+                snapshot.forEach(doc => {
+                    const option = document.createElement('option');
+                    option.value = doc.data().name;
+                    datalist.appendChild(option);
+                });
             }
         });
 
@@ -61,7 +74,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const guestName = document.getElementById('guest-name').value.trim();
+        const guestInput = document.getElementById('guest-name');
+        const guestName = guestInput.value.trim();
+
         if (!guestName) return;
 
         // Check local storage for this specific event
@@ -75,10 +90,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         setLoading(true);
+        errorMessage.classList.add('hidden');
 
         try {
+            // Record guest globally for future auto-suggest
+            db.collection('guests').doc(guestName.toLowerCase().replace(/[^a-z0-9]/g, '')).set({
+                name: guestName
+            }, { merge: true }).catch(console.error);
+
             let assignedTable = null;
-            
+
             if (isTableAssignmentEnabled) {
                 assignedTable = await assignRandomTable(guestName, eventId);
                 if (!assignedTable) {
@@ -113,10 +134,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         return await db.runTransaction(async (transaction) => {
             const tablesRef = db.collection('events').doc(evId).collection('tables');
             
+            const targetTotalTables = window.currentTotalTables || TOTAL_TABLES;
+
             // In the Firebase Web Client SDK, transaction.get() only accepts a DocumentReference, not a Query/Collection.
-            // So we explicitly create references for all 10 tables and read them concurrently.
+            // So we explicitly create references for all target tables and read them concurrently.
             const tableRefs = [];
-            for (let i = 1; i <= TOTAL_TABLES; i++) {
+            for (let i = 1; i <= targetTotalTables; i++) {
                 tableRefs.push(tablesRef.doc(i.toString()));
             }
 
@@ -132,7 +155,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            for (let i = 1; i <= TOTAL_TABLES; i++) {
+            for (let i = 1; i <= targetTotalTables; i++) {
                 const tableId = i.toString();
                 const tableData = existingTablesData[tableId] || { count: 0, guests: [] };
                 

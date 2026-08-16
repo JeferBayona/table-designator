@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Manager - Admin Dashboard</title>
+    <title>Ikthus Event Organizer - Admin</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     
@@ -15,26 +15,30 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="admin-body">
+
+    <!-- Sticky Top App Bar -->
+    <div class="app-top-bar">
+        <div class="top-bar-content">
+            <div class="app-branding">
+                <img src="assets/logo.jpg" alt="Logo" class="app-logo">
+                <h2>Ikthus Event Organizer</h2>
+            </div>
+            <div class="select-wrapper">
+                <select id="event-select">
+                    <option value="">-- Select an Event --</option>
+                    <!-- Dynamic options here -->
+                </select>
+            </div>
+            <button id="create-event-btn" class="primary-btn header-btn">+ Create Event</button>
+        </div>
+    </div>
+
     <div class="admin-container">
         
-        <!-- Event Selector Header -->
-        <div class="event-selector-header card">
-            <div class="event-selector-left">
-                <h2>Event Manager</h2>
-                <div class="select-wrapper">
-                    <select id="event-select">
-                        <option value="">-- Select an Event --</option>
-                        <!-- Dynamic options here -->
-                    </select>
-                </div>
-            </div>
-            <button id="create-event-btn" class="primary-btn" style="width: auto; padding: 10px 20px;">+ Create New Event</button>
-        </div>
-
         <!-- Welcome Hero (Visible when no event selected) -->
         <div id="welcome-hero" class="welcome-hero card">
-            <div class="hero-icon">👋</div>
-            <h1>Welcome to Event Manager</h1>
+            <img src="assets/logo.jpg" alt="Ikthus Logo" style="width: 120px; height: 120px; border-radius: 24px; margin-bottom: 20px;">
+            <h1>Welcome to Ikthus Event Organizer</h1>
             <p>Select an existing event from the dropdown above to manage your attendees and table designations, or create a brand new event to get started!</p>
         </div>
 
@@ -50,6 +54,11 @@
                             <span class="slider round"></span>
                         </label>
                         <span id="mode-status-text">Random Table Assignment: OFF</span>
+                    </div>
+                    <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+                        <label for="total-tables-setting" style="font-size: 14px; font-weight: 600;">Total Tables:</label>
+                        <input type="number" id="total-tables-setting" value="10" min="1" style="width: 80px; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                        <button id="save-tables-btn" class="secondary-btn" style="padding: 6px 12px; font-size: 12px;">Update</button>
                     </div>
                 </div>
                 <div class="admin-actions">
@@ -77,7 +86,8 @@
                 <form id="manual-checkin-form" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
                     <div style="flex: 2; min-width: 200px;">
                         <label for="manual-guest-name" style="display: block; margin-bottom: 5px; font-size: 14px;">Guest Name *</label>
-                        <input type="text" id="manual-guest-name" placeholder="John Doe" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <input type="text" id="manual-guest-name" placeholder="John Doe" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;" list="guest-suggestions">
+                        <datalist id="guest-suggestions"></datalist>
                     </div>
                     <div style="flex: 1; min-width: 100px;">
                         <label for="manual-table-number" style="display: block; margin-bottom: 5px; font-size: 14px;">Table # (Optional)</label>
@@ -92,17 +102,17 @@
                 <div class="attendance-section">
                     <h2>Attendance List</h2>
                     <div class="table-responsive">
-                        <table class="attendance-table">
+                        <table class="master-list-table">
                             <thead>
                                 <tr>
-                                    <th>#</th>
                                     <th>Name</th>
-                                    <th>Time</th>
-                                    <th class="table-col hidden">Table</th>
+                                    <th>Time Checked In</th>
+                                    <th class="table-col hidden">Assigned Table</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="attendance-list-body">
-                                <!-- Attendees go here -->
+                                <!-- Populated dynamically -->
                             </tbody>
                         </table>
                     </div>

@@ -157,12 +157,88 @@ header p {
 /* Admin Styles */
 .admin-body {
     align-items: flex-start;
-    padding: 40px 20px;
+    padding: 0;
+    margin: 0;
+    background-color: var(--bg-color);
+}
+
+.app-top-bar {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.top-bar-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.app-branding {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.app-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+}
+
+.app-branding h2 {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.header-btn {
+    width: auto !important;
+    padding: 8px 16px !important;
+    font-size: 14px !important;
 }
 
 .admin-container {
     width: 100%;
     max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Responsive Overrides */
+@media (max-width: 768px) {
+    .top-bar-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .app-branding {
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+    .admin-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .admin-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    .admin-actions button {
+        flex: 1;
+        min-width: 120px;
+    }
+    .stats-panel {
+        flex-direction: column;
+    }
 }
 
 .admin-header {

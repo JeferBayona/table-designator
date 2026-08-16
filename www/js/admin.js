@@ -26,6 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const createEventForm = document.getElementById('create-event-form');
     const submitEventBtn = document.getElementById('submit-event-btn');
 
+    const editAttendeeModal = document.getElementById('edit-attendee-modal');
+    const closeEditAttendee = document.getElementById('close-edit-attendee');
+    const editAttendeeForm = document.getElementById('edit-attendee-form');
+
     const analyticsBtn = document.getElementById('analytics-btn');
     const analyticsContent = document.getElementById('analytics-content');
     const closeAnalyticsBtn = document.getElementById('close-analytics-btn');
@@ -475,64 +479,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const oldName = target.getAttribute('data-name');
             const oldTable = target.getAttribute('data-table');
 
-            const newName = prompt("Edit Guest Name:", oldName);
-            if (newName === null) return;
+            document.getElementById('edit-attendee-id').value = id;
+            document.getElementById('edit-attendee-old-name').value = oldName;
+            document.getElementById('edit-attendee-old-table').value = oldTable || '';
+            document.getElementById('edit-attendee-name').value = oldName;
+            document.getElementById('edit-attendee-table').value = oldTable || '';
             
-            const newTableRaw = prompt("Edit Assigned Table Number (leave blank to unassign):", oldTable);
-            if (newTableRaw === null) return;
-            const newTable = newTableRaw.trim();
-
-            try {
-                // If table changed, we must transactionally swap tables
-                if (oldTable !== newTable) {
-                    await db.runTransaction(async (t) => {
-                        // Remove from old table
-                        if (oldTable) {
-                            const oldTableRef = db.collection('events').doc(activeEventId).collection('tables').doc(oldTable);
-                            const oldDoc = await t.get(oldTableRef);
-                            if (oldDoc.exists) {
-                                const data = oldDoc.data();
-                                const newGuests = data.guests.filter(g => g !== oldName);
-                                t.update(oldTableRef, {
-                                    count: Math.max(0, data.count - 1),
-                                    guests: newGuests
-                                });
-                            }
-                        }
-                        // Add to new table
-                        if (newTable) {
-                            const newTableRef = db.collection('events').doc(activeEventId).collection('tables').doc(newTable);
-                            const newDoc = await t.get(newTableRef);
-                            const data = newDoc.exists ? newDoc.data() : { count: 0, guests: [] };
-                            t.set(newTableRef, {
-                                count: data.count + 1,
-                                guests: [...data.guests, newName.trim()]
-                            });
-                        }
-                    });
-                } else if (oldName !== newName.trim() && oldTable) {
-                    // Name changed but table same -> update name in table array
-                    await db.runTransaction(async (t) => {
-                        const tableRef = db.collection('events').doc(activeEventId).collection('tables').doc(oldTable);
-                        const doc = await t.get(tableRef);
-                        if (doc.exists) {
-                            const data = doc.data();
-                            const newGuests = data.guests.map(g => g === oldName ? newName.trim() : g);
-                            t.update(tableRef, { guests: newGuests });
-                        }
-                    });
-                }
-
-                // Update attendee record
-                await db.collection('events').doc(activeEventId).collection('attendees').doc(id).update({
-                    name: newName.trim(),
-                    tableNumber: newTable || null
-                });
-
-            } catch (err) {
-                console.error("Error editing:", err);
-                alert("Failed to edit attendee.");
-            }
+            document.getElementById('edit-attendee-modal').classList.remove('hidden');
         }
     });
 
@@ -684,5 +637,78 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Add Person';
         }
+        // Edit Attendee Logic
+    closeEditAttendee.addEventListener('click', () => {
+        editAttendeeModal.classList.add('hidden');
     });
+
+    editAttendeeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submit-edit-attendee-btn');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        const id = document.getElementById('edit-attendee-id').value;
+        const oldName = document.getElementById('edit-attendee-old-name').value;
+        const oldTable = document.getElementById('edit-attendee-old-table').value;
+        const newName = document.getElementById('edit-attendee-name').value.trim();
+        const newTable = document.getElementById('edit-attendee-table').value.trim();
+
+        try {
+            // If table changed, we must transactionally swap tables
+            if (oldTable !== newTable) {
+                await db.runTransaction(async (t) => {
+                    // Remove from old table
+                    if (oldTable) {
+                        const oldTableRef = db.collection('events').doc(activeEventId).collection('tables').doc(oldTable);
+                        const oldDoc = await t.get(oldTableRef);
+                        if (oldDoc.exists) {
+                            const data = oldDoc.data();
+                            const newGuests = data.guests.filter(g => g !== oldName);
+                            t.update(oldTableRef, {
+                                count: Math.max(0, data.count - 1),
+                                guests: newGuests
+                            });
+                        }
+                    }
+                    // Add to new table
+                    if (newTable) {
+                        const newTableRef = db.collection('events').doc(activeEventId).collection('tables').doc(newTable);
+                        const newDoc = await t.get(newTableRef);
+                        const data = newDoc.exists ? newDoc.data() : { count: 0, guests: [] };
+                        t.set(newTableRef, {
+                            count: data.count + 1,
+                            guests: [...data.guests, newName]
+                        }, { merge: true });
+                    }
+                });
+            } else if (oldName !== newName && oldTable) {
+                // Name changed but table same -> update name in table array
+                await db.runTransaction(async (t) => {
+                    const tableRef = db.collection('events').doc(activeEventId).collection('tables').doc(oldTable);
+                    const doc = await t.get(tableRef);
+                    if (doc.exists) {
+                        const data = doc.data();
+                        const newGuests = data.guests.map(g => g === oldName ? newName : g);
+                        t.update(tableRef, { guests: newGuests });
+                    }
+                });
+            }
+
+            // Update attendee record
+            await db.collection('events').doc(activeEventId).collection('attendees').doc(id).update({
+                name: newName,
+                tableNumber: newTable || null
+            });
+
+            editAttendeeModal.classList.add('hidden');
+        } catch (err) {
+            console.error("Error editing:", err);
+            alert("Failed to edit attendee.");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Save Changes';
+        }
+    });
+
 });

@@ -3,6 +3,16 @@ document.addEventListener('DOMContentLoaded', () => {
         alert("Database not configured. Please check js/firebase-config.js");
         return;
     }
+    const db = firebase.firestore();
+
+    // Force Firebase to reconnect when app comes to foreground
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            db.enableNetwork().catch(console.error);
+        } else {
+            db.disableNetwork().catch(console.error);
+        }
+    });
 
     // Event Elements
     const eventSelect = document.getElementById('event-select');
@@ -307,8 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "No.,Name,Time Checked In,Assigned Table\n";
+        let csvContent = "No.,Name,Time Checked In,Assigned Table\n";
 
         attendeesData.forEach((row, index) => {
             const timeString = row.timestamp ? new Date(row.timestamp.toDate()).toLocaleString() : 'N/A';
@@ -317,13 +326,15 @@ document.addEventListener('DOMContentLoaded', () => {
             csvContent += `${index + 1},${name},"${timeString}",${tableString}\n`;
         });
 
-        const encodedUri = encodeURI(csvContent);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
+        link.setAttribute("href", url);
         link.setAttribute("download", `attendance_${activeEventTitle.textContent}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     });
 
     // Handle Edit / Delete Attendee

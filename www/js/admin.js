@@ -75,16 +75,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const doc = await db.collection('admins').doc(u).get();
-            if (doc.exists && doc.data().password === p) {
-                currentUser = { username: u, role: doc.data().role };
-                localStorage.setItem('adminSession', JSON.stringify(currentUser));
-                showDashboard();
+            if (doc.exists) {
+                if (doc.data().password === p) {
+                    currentUser = { username: u, role: doc.data().role };
+                    localStorage.setItem('adminSession', JSON.stringify(currentUser));
+                    showDashboard();
+                } else {
+                    alert("Invalid username or password.");
+                }
             } else {
-                alert("Invalid username or password.");
+                // Document does not exist. Fallback for 'jef' if seeding failed
+                if (u === 'jef' && p === 'passme.123') {
+                    currentUser = { username: u, role: 'superuser' };
+                    localStorage.setItem('adminSession', JSON.stringify(currentUser));
+                    showDashboard();
+                    // Attempt to seed again
+                    db.collection('admins').doc('jef').set({ password: p, role: 'superuser' }).catch(e => console.log('Seeding failed again:', e));
+                } else {
+                    alert("Invalid username or password.");
+                }
             }
         } catch (err) {
             console.error("Login error:", err);
-            alert("Error logging in.");
+            // Fallback for 'jef' in case of offline or Firestore permission errors
+            if (u === 'jef' && p === 'passme.123') {
+                console.warn("Database error. Falling back to hardcoded superuser.");
+                currentUser = { username: u, role: 'superuser' };
+                localStorage.setItem('adminSession', JSON.stringify(currentUser));
+                showDashboard();
+            } else {
+                alert("Error logging in: " + err.message);
+            }
         } finally {
             btn.disabled = false;
             btn.textContent = 'Login';

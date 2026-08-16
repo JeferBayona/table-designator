@@ -49,7 +49,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            for (const doc of eventsSnapshot.docs) {
+            let docs = [];
+            eventsSnapshot.forEach(doc => docs.push(doc));
+            docs.sort((a, b) => {
+                const dataA = a.data();
+                const dataB = b.data();
+                const timeA = dataA.createdAt ? dataA.createdAt.toMillis() : 0;
+                const timeB = dataB.createdAt ? dataB.createdAt.toMillis() : 0;
+                return timeB - timeA;
+            });
+
+            for (const doc of docs) {
                 const data = doc.data();
                 const eventId = doc.id;
                 
@@ -116,11 +126,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let unsubEvent = null;
 
     // Load Events
-    db.collection('events').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+    db.collection('events').onSnapshot(snapshot => {
         const currentVal = eventSelect.value;
         eventSelect.innerHTML = '<option value="">-- Select an Event --</option>';
         
-        snapshot.forEach(doc => {
+        let docs = [];
+        snapshot.forEach(doc => docs.push(doc));
+        // Sort descending by createdAt. Missing createdAt defaults to 0 (oldest).
+        docs.sort((a, b) => {
+            const dataA = a.data();
+            const dataB = b.data();
+            const timeA = dataA.createdAt ? dataA.createdAt.toMillis() : 0;
+            const timeB = dataB.createdAt ? dataB.createdAt.toMillis() : 0;
+            return timeB - timeA;
+        });
+        
+        docs.forEach(doc => {
             const data = doc.data();
             const option = document.createElement('option');
             option.value = doc.id;

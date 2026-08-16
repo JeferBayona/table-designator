@@ -80,13 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentUser = { username: u, role: doc.data().role };
                     localStorage.setItem('adminSession', JSON.stringify(currentUser));
                     showDashboard();
-                } else if (u === 'jef' && p === 'passme.123') {
-                    // Master override: If they changed password via Edit Profile and got locked out
-                    currentUser = { username: u, role: 'superuser' };
-                    localStorage.setItem('adminSession', JSON.stringify(currentUser));
-                    showDashboard();
-                    // Reset to default
-                    db.collection('admins').doc('jef').update({ password: 'passme.123' }).catch(e => console.log('Reset failed:', e));
                 } else {
                     alert("Invalid username or password.");
                 }

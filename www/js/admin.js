@@ -54,8 +54,17 @@ document.addEventListener('DOMContentLoaded', () => {
             docs.sort((a, b) => {
                 const dataA = a.data();
                 const dataB = b.data();
-                const timeA = dataA.createdAt ? dataA.createdAt.toMillis() : 0;
-                const timeB = dataB.createdAt ? dataB.createdAt.toMillis() : 0;
+                
+                const getTime = (val) => {
+                    if (!val) return 0;
+                    if (typeof val.toMillis === 'function') return val.toMillis();
+                    if (typeof val.getTime === 'function') return val.getTime();
+                    if (val.seconds) return val.seconds * 1000;
+                    return 0;
+                };
+
+                const timeA = getTime(dataA.createdAt);
+                const timeB = getTime(dataB.createdAt);
                 return timeB - timeA;
             });
 
@@ -136,8 +145,17 @@ document.addEventListener('DOMContentLoaded', () => {
         docs.sort((a, b) => {
             const dataA = a.data();
             const dataB = b.data();
-            const timeA = dataA.createdAt ? dataA.createdAt.toMillis() : 0;
-            const timeB = dataB.createdAt ? dataB.createdAt.toMillis() : 0;
+            
+            const getTime = (val) => {
+                if (!val) return 0;
+                if (typeof val.toMillis === 'function') return val.toMillis();
+                if (typeof val.getTime === 'function') return val.getTime();
+                if (val.seconds) return val.seconds * 1000;
+                return 0;
+            };
+
+            const timeA = getTime(dataA.createdAt);
+            const timeB = getTime(dataB.createdAt);
             return timeB - timeA;
         });
         

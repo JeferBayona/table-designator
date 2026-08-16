@@ -13,8 +13,9 @@
 
     <!-- Admin App Redirect -->
     <script>
-        // If this page is opened inside the Android APK (Capacitor), instantly redirect to the Admin Dashboard
-        if (window.navigator.userAgent.includes('Capacitor')) {
+        // The APK runs on 'localhost' (Capacitor). The guest portal runs on 'jeferbayona.github.io'.
+        // If we are running on localhost, redirect to the Admin Dashboard.
+        if (window.location.hostname === 'localhost' || window.location.protocol === 'file:') {
             window.location.replace('admin.html');
         }
     </script>

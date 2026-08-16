@@ -28,14 +28,22 @@ jobs:
     - name: Sync Capacitor
       run: npx cap sync android
       
-    - name: Build APK
+    - name: Decode Keystore
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
+        
+    - name: Build Release APK
       working-directory: android
+      env:
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
       run: |
         chmod +x ./gradlew
-        ./gradlew assembleDebug
+        ./gradlew assembleRelease
         
-    - name: Upload APK Artifact
+    - name: Upload Release APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: table-designator-app.apk
-        path: android/app/build/outputs/apk/debug/app-debug.apk
+        name: table-designator-release.apk
+        path: android/app/build/outputs/apk/release/app-release.apk

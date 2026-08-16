@@ -13,33 +13,42 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Welcome to the Event</h1>
-            <p>Please enter your name to check in.</p>
-        </header>
+        <!-- Error State if No Event ID -->
+        <div id="no-event-state" class="card hidden">
+            <h2 style="color: var(--danger); margin-bottom: 10px;">Invalid QR Code</h2>
+            <p>No event was specified in this link.</p>
+            <p style="margin-top: 15px; font-size: 14px; color: var(--text-muted);">Please scan the official QR code provided at the venue.</p>
+        </div>
 
-        <main id="main-content">
-            <div class="card" id="registration-card">
-                <form id="assignment-form">
-                    <div class="form-group">
-                        <label for="guest-name">Full Name</label>
-                        <input type="text" id="guest-name" name="guest-name" placeholder="e.g. John Doe" required autocomplete="off">
-                    </div>
-                    <button type="submit" id="submit-btn" class="primary-btn">Check In</button>
-                    <p id="error-message" class="error hidden"></p>
-                </form>
-            </div>
+        <div id="app-content" class="hidden">
+            <header>
+                <h1 id="event-title-display">Welcome to the Event</h1>
+                <p>Please enter your name to check in.</p>
+            </header>
 
-            <div class="card hidden" id="result-card">
-                <div class="success-icon">✓</div>
-                <h2>You're all set!</h2>
-                <p id="proceed-text">Checked in successfully.</p>
-                <div id="table-number-container" class="table-number-display hidden">
-                    <span id="assigned-table-number">-</span>
+            <main id="main-content">
+                <div class="card" id="registration-card">
+                    <form id="assignment-form">
+                        <div class="form-group">
+                            <label for="guest-name">Full Name</label>
+                            <input type="text" id="guest-name" name="guest-name" placeholder="e.g. John Doe" required autocomplete="off">
+                        </div>
+                        <button type="submit" id="submit-btn" class="primary-btn">Check In</button>
+                        <p id="error-message" class="error hidden"></p>
+                    </form>
                 </div>
-                <p class="guest-welcome">Have a great time, <span id="display-name"></span>!</p>
-            </div>
-        </main>
+
+                <div class="card hidden" id="result-card">
+                    <div class="success-icon">✓</div>
+                    <h2>You're all set!</h2>
+                    <p id="proceed-text">Checked in successfully.</p>
+                    <div id="table-number-container" class="table-number-display hidden">
+                        <span id="assigned-table-number">-</span>
+                    </div>
+                    <p class="guest-welcome">Have a great time, <span id="display-name"></span>!</p>
+                </div>
+            </main>
+        </div>
     </div>
 
     <script src="js/firebase-config.js"></script>

@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const form = document.getElementById('assignment-form');
     const submitBtn = document.getElementById('submit-btn');
     const errorMessage = document.getElementById('error-message');
@@ -9,18 +9,53 @@ document.addEventListener('DOMContentLoaded', () => {
     const tableNumberDisplay = document.getElementById('assigned-table-number');
     const proceedText = document.getElementById('proceed-text');
     const displayName = document.getElementById('display-name');
+
+    const noEventState = document.getElementById('no-event-state');
+    const appContent = document.getElementById('app-content');
+    const eventTitleDisplay = document.getElementById('event-title-display');
     
     const TOTAL_TABLES = 10;
     const MAX_CAPACITY = 4;
     
     let isTableAssignmentEnabled = false;
 
-    if (db) {
-        db.collection('settings').doc('event').onSnapshot(doc => {
+    // Get eventId from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventId = urlParams.get('eventId');
+
+    if (!eventId) {
+        noEventState.classList.remove('hidden');
+        return;
+    }
+
+    if (!db) {
+        alert("Database not configured.");
+        return;
+    }
+
+    try {
+        const eventDoc = await db.collection('events').doc(eventId).get();
+        if (!eventDoc.exists) {
+            noEventState.classList.remove('hidden');
+            noEventState.innerHTML = '<h2 style="color: var(--danger);">Event Not Found</h2><p>This event does not exist or has been removed.</p>';
+            return;
+        }
+
+        const eventData = eventDoc.data();
+        eventTitleDisplay.textContent = `Welcome to ${eventData.title}`;
+        
+        // Listen to event settings real-time
+        db.collection('events').doc(eventId).onSnapshot(doc => {
             if (doc.exists) {
                 isTableAssignmentEnabled = doc.data().tableAssignmentEnabled || false;
             }
         });
+
+        appContent.classList.remove('hidden');
+    } catch (err) {
+        console.error("Error loading event:", err);
+        alert("Could not load event data.");
+        return;
     }
 
     form.addEventListener('submit', async (e) => {
@@ -29,14 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const guestName = document.getElementById('guest-name').value.trim();
         if (!guestName) return;
 
-        if (!db) {
-            showError("Database not configured. Please contact the organizer.");
-            return;
-        }
+        // Check local storage for this specific event
+        const localKeyName = `checkedInName_${eventId}`;
+        const localKeyTable = `assignedTable_${eventId}`;
 
-        // Check if guest is already checked in locally
-        if (localStorage.getItem('checkedInName') === guestName) {
-            const savedTable = localStorage.getItem('assignedTable');
+        if (localStorage.getItem(localKeyName) === guestName) {
+            const savedTable = localStorage.getItem(localKeyTable);
             showResult(savedTable, guestName);
             return;
         }
@@ -47,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let assignedTable = null;
             
             if (isTableAssignmentEnabled) {
-                assignedTable = await assignRandomTable(guestName);
+                assignedTable = await assignRandomTable(guestName, eventId);
                 if (!assignedTable) {
                     showError("All tables are currently full! Please see the organizer.");
                     setLoading(false);
@@ -55,16 +88,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Always add to attendees collection
-            await db.collection('attendees').add({
+            // Add to event's attendees collection
+            await db.collection('events').doc(eventId).collection('attendees').add({
                 name: guestName,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 tableNumber: assignedTable
             });
 
-            localStorage.setItem('checkedInName', guestName);
+            localStorage.setItem(localKeyName, guestName);
             if (assignedTable) {
-                localStorage.setItem('assignedTable', assignedTable);
+                localStorage.setItem(localKeyTable, assignedTable);
             }
             
             showResult(assignedTable, guestName);
@@ -76,9 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    async function assignRandomTable(guestName) {
+    async function assignRandomTable(guestName, evId) {
         return await db.runTransaction(async (transaction) => {
-            const tablesRef = db.collection('tables');
+            const tablesRef = db.collection('events').doc(evId).collection('tables');
             const querySnapshot = await transaction.get(tablesRef);
             let availableTables = [];
             let existingTablesData = {};
@@ -135,6 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function setLoading(isLoading) {
         submitBtn.disabled = isLoading;
         submitBtn.textContent = isLoading ? 'Checking in...' : 'Check In';
-        errorMessage.classList.add('hidden');
+        if (isLoading) errorMessage.classList.add('hidden');
     }
 });

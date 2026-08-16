@@ -213,7 +213,96 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-    // --- End Authentication System ---
+    // --- Edit Profile System ---
+    const editProfileBtn = document.getElementById('edit-profile-btn');
+    const editProfileModal = document.getElementById('edit-profile-modal');
+    const closeEditProfile = document.getElementById('close-edit-profile');
+    const editProfileForm = document.getElementById('edit-profile-form');
+    
+    editProfileBtn.addEventListener('click', async () => {
+        if (!currentUser) return;
+        document.getElementById('profile-username').value = currentUser.username;
+        
+        // If superuser jef, disable username field
+        if (currentUser.username === 'jef') {
+            document.getElementById('profile-username').readOnly = true;
+            document.getElementById('profile-username').style.backgroundColor = '#f0f0f0';
+        } else {
+            document.getElementById('profile-username').readOnly = false;
+            document.getElementById('profile-username').style.backgroundColor = '';
+        }
+        
+        // Fetch current password to pre-fill
+        try {
+            const doc = await db.collection('admins').doc(currentUser.username).get();
+            if (doc.exists) {
+                document.getElementById('profile-password').value = doc.data().password;
+            } else if (currentUser.username === 'jef') {
+                 // Fallback
+                 document.getElementById('profile-password').value = 'passme.123';
+            }
+        } catch (e) {
+            console.error("Could not fetch password", e);
+            document.getElementById('profile-password').value = '';
+        }
+        
+        editProfileModal.classList.remove('hidden');
+    });
+    
+    closeEditProfile.addEventListener('click', () => {
+        editProfileModal.classList.add('hidden');
+    });
+    
+    editProfileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newU = document.getElementById('profile-username').value.trim();
+        const newP = document.getElementById('profile-password').value;
+        const btn = document.getElementById('submit-profile-btn');
+        
+        if (!newU || !newP) return;
+        
+        if (currentUser.username === 'jef' && newU !== 'jef') {
+            alert("Superuser 'jef' cannot change their username.");
+            return;
+        }
+        
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        
+        try {
+            if (newU === currentUser.username) {
+                // Just update password
+                await db.collection('admins').doc(currentUser.username).update({ password: newP });
+            } else {
+                // Changing username: check if new exists
+                const existing = await db.collection('admins').doc(newU).get();
+                if (existing.exists) {
+                    alert("That username is already taken!");
+                    btn.disabled = false;
+                    btn.textContent = 'Save Changes';
+                    return;
+                }
+                // Create new, delete old
+                await db.collection('admins').doc(newU).set({ password: newP, role: currentUser.role });
+                await db.collection('admins').doc(currentUser.username).delete();
+                
+                // Update session
+                currentUser.username = newU;
+                localStorage.setItem('adminSession', JSON.stringify(currentUser));
+            }
+            alert("Profile updated successfully!");
+            editProfileModal.classList.add('hidden');
+            if (currentUser.role === 'superuser') loadAdmins(); // Refresh list if open
+        } catch (err) {
+            console.error("Profile update error", err);
+            alert("Failed to update profile.");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Save Changes';
+        }
+    });
+
+    // --- End Edit Profile System ---
 
 
     // Event Elements

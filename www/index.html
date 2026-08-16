@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table Assignment</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Welcome to the Event</h1>
+            <p>Please enter your name to receive your table assignment.</p>
+        </header>
+
+        <main id="main-content">
+            <div class="card" id="registration-card">
+                <form id="assignment-form">
+                    <div class="form-group">
+                        <label for="guest-name">Full Name</label>
+                        <input type="text" id="guest-name" name="guest-name" placeholder="e.g. John Doe" required autocomplete="off">
+                    </div>
+                    <button type="submit" id="submit-btn" class="primary-btn">Get My Table</button>
+                    <p id="error-message" class="error hidden"></p>
+                </form>
+            </div>
+
+            <div class="card hidden" id="result-card">
+                <div class="success-icon">✓</div>
+                <h2>You're all set!</h2>
+                <p>Please proceed to your table:</p>
+                <div class="table-number-display">
+                    <span id="assigned-table-number">-</span>
+                </div>
+                <p class="guest-welcome">Have a great time, <span id="display-name"></span>!</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -480,6 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = document.getElementById('event-name').value.trim().toLowerCase().replace(/\s+/g, '-');
         const title = document.getElementById('event-title').value.trim();
         const date = document.getElementById('event-date').value;
+        const assignmentStyle = document.getElementById('assignment-style').value;
 
         if (!id || !title || !date) return;
         submitEventBtn.disabled = true;
@@ -495,6 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await docRef.set({
                 title: title,
                 date: date,
+                assignmentStyle: assignmentStyle,
                 tableAssignmentEnabled: false,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });

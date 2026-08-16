@@ -597,3 +597,163 @@ input:checked + .slider:before {
     margin-top: 4px;
     margin-bottom: 12px;
 }
+
+/* String Cut Animation Styles */
+#animation-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background-color: var(--bg-color);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+}
+
+#cut-instruction {
+    margin-top: 40px;
+    color: var(--text-main);
+    z-index: 10;
+}
+
+.strings-container {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    max-width: 400px;
+    height: 100%;
+    position: relative;
+}
+
+.string-wrapper {
+    position: relative;
+    width: 40px;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.string, .string-bottom {
+    position: absolute;
+    width: 6px;
+    border-radius: 3px;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+.string {
+    top: -50px;
+    height: 60%;
+    z-index: 5;
+}
+
+.string-bottom {
+    top: calc(60% - 50px);
+    height: 60%;
+    z-index: 4;
+}
+
+.red-string { background-color: #ef4444; }
+.green-string { background-color: #22c55e; }
+
+.string.cut {
+    /* No visual change to top half, it stays hanging */
+}
+
+.string-bottom.cut {
+    animation: fallDown 1s forwards ease-in;
+}
+
+@keyframes fallDown {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(45deg); opacity: 0; }
+}
+
+#scissor {
+    position: absolute;
+    font-size: 40px;
+    z-index: 15;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+.scissor-snip {
+    animation: snip 0.3s ease-out;
+}
+
+@keyframes snip {
+    0% { transform: translate(-50%, -50%) rotate(-45deg) scale(1); }
+    50% { transform: translate(-50%, -50%) rotate(-20deg) scale(0.9); }
+    100% { transform: translate(-50%, -50%) rotate(-45deg) scale(1); }
+}
+
+#ball-container {
+    position: absolute;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+}
+
+#ball {
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle at 30% 30%, #ffffff, #d1d5db, #9ca3af);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.ball-drop {
+    animation: ballBounce 1.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes ballBounce {
+    0% { transform: translateY(0); }
+    40% { transform: translateY(calc(100vh - 200px)); }
+    60% { transform: translateY(calc(100vh - 350px)); }
+    80% { transform: translateY(calc(100vh - 180px)); }
+    90% { transform: translateY(calc(100vh - 220px)); }
+    100% { transform: translateY(calc(100vh - 180px)); }
+}
+
+#bowl-container {
+    position: absolute;
+    bottom: -150px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 100px;
+    z-index: 10;
+    transition: bottom 1s ease-out;
+}
+
+.bowl-slide-up {
+    bottom: 20px !important;
+}
+
+.bowl-back, .bowl-front {
+    position: absolute;
+    width: 100%;
+    border-radius: 50%;
+}
+
+.bowl-back {
+    height: 80px;
+    background-color: #cbd5e1;
+    top: 10px;
+    z-index: 5;
+}
+
+.bowl-front {
+    height: 100px;
+    background-color: #94a3b8;
+    bottom: 0;
+    z-index: 25; /* Ball is z-index 20, so it lands "in" the bowl */
+    clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%);
+}

@@ -62,6 +62,33 @@
         </div>
     </div>
 
+    <!-- String Cut Animation Overlay (Hidden by default) -->
+    <div id="animation-overlay" class="hidden">
+        <h2 id="cut-instruction">Swipe to cut a string!</h2>
+        <div class="strings-container">
+            <div class="string-wrapper" id="string-red-wrapper">
+                <div class="string red-string" id="string-red"></div>
+                <div class="string-bottom red-string" id="string-red-bottom"></div>
+            </div>
+            <div class="string-wrapper" id="string-green-wrapper">
+                <div class="string green-string" id="string-green"></div>
+                <div class="string-bottom green-string" id="string-green-bottom"></div>
+            </div>
+        </div>
+        <div id="scissor" class="hidden">✂️</div>
+        
+        <div id="ball-container" class="hidden">
+            <div id="ball">
+                <span id="ball-number"></span>
+            </div>
+        </div>
+        
+        <div id="bowl-container">
+            <div class="bowl-back"></div>
+            <div class="bowl-front"></div>
+        </div>
+    </div>
+
     <script src="js/firebase-config.js"></script>
     <script src="js/app.js"></script>
 </body>

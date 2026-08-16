@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const MAX_CAPACITY = 4;
     
     let isTableAssignmentEnabled = false;
+    let currentAssignmentStyle = 'generic';
 
     // Get eventId from URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -49,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (doc.exists) {
                 isTableAssignmentEnabled = doc.data().tableAssignmentEnabled || false;
                 window.currentTotalTables = doc.data().totalTables || 10;
+                currentAssignmentStyle = doc.data().assignmentStyle || 'generic';
             }
         });
 
@@ -182,18 +184,111 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function showResult(tableNumber, name) {
-        registrationCard.classList.add('hidden');
-        resultCard.classList.remove('hidden');
-        displayName.textContent = name;
-
-        if (tableNumber) {
-            proceedText.textContent = "Please proceed to your table:";
-            tableNumberContainer.classList.remove('hidden');
-            tableNumberDisplay.textContent = tableNumber;
+        if (currentAssignmentStyle === 'string_cut' && tableNumber) {
+            runStringCutAnimation(tableNumber, name);
         } else {
-            proceedText.textContent = "You have successfully checked in.";
-            tableNumberContainer.classList.add('hidden');
+            // Generic Display
+            registrationCard.classList.add('hidden');
+            resultCard.classList.remove('hidden');
+            displayName.textContent = name;
+
+            if (tableNumber) {
+                proceedText.textContent = "Please proceed to your table:";
+                tableNumberContainer.classList.remove('hidden');
+                tableNumberDisplay.textContent = tableNumber;
+            } else {
+                proceedText.textContent = "You have successfully checked in.";
+                tableNumberContainer.classList.add('hidden');
+            }
         }
+    }
+
+    function runStringCutAnimation(tableNumber, name) {
+        // Hide standard UI
+        registrationCard.classList.add('hidden');
+        document.getElementById('app-content').classList.add('hidden');
+        
+        const overlay = document.getElementById('animation-overlay');
+        overlay.classList.remove('hidden');
+        
+        const scissor = document.getElementById('scissor');
+        const ballContainer = document.getElementById('ball-container');
+        const ballNumber = document.getElementById('ball-number');
+        const bowlContainer = document.getElementById('bowl-container');
+        
+        ballNumber.textContent = tableNumber;
+
+        let hasCut = false;
+
+        function handleMove(e) {
+            if (hasCut) return;
+            
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            // Check if pointer intersects any string wrapper
+            const redWrapper = document.getElementById('string-red-wrapper').getBoundingClientRect();
+            const greenWrapper = document.getElementById('string-green-wrapper').getBoundingClientRect();
+            
+            let cutTarget = null;
+            
+            if (clientX >= redWrapper.left && clientX <= redWrapper.right && clientY >= redWrapper.top && clientY <= redWrapper.bottom) {
+                cutTarget = 'red';
+            } else if (clientX >= greenWrapper.left && clientX <= greenWrapper.right && clientY >= greenWrapper.top && clientY <= greenWrapper.bottom) {
+                cutTarget = 'green';
+            }
+
+            if (cutTarget) {
+                hasCut = true;
+                
+                // Show scissor at coordinate
+                scissor.style.left = `${clientX}px`;
+                scissor.style.top = `${clientY}px`;
+                scissor.classList.remove('hidden');
+                scissor.classList.add('scissor-snip');
+                
+                // Cut the specific string
+                document.getElementById(`string-${cutTarget}-bottom`).classList.add('cut');
+                
+                // Remove instructions
+                document.getElementById('cut-instruction').classList.add('hidden');
+
+                // Sequence the ball drop
+                setTimeout(() => {
+                    scissor.style.opacity = 0;
+                    
+                    // slide bowl up
+                    bowlContainer.classList.add('bowl-slide-up');
+                    
+                    // drop ball
+                    setTimeout(() => {
+                        ballContainer.classList.remove('hidden');
+                        ballContainer.querySelector('#ball').classList.add('ball-drop');
+                        
+                        // after animation completes, return to result card
+                        setTimeout(() => {
+                            overlay.classList.add('hidden');
+                            document.getElementById('app-content').classList.remove('hidden');
+                            
+                            // fallback to generic result view to show name and number permanently
+                            currentAssignmentStyle = 'generic'; 
+                            showResult(tableNumber, name);
+                            
+                        }, 2500); // Wait for bounce to finish + pause
+                    }, 500);
+                }, 300); // Time for scissor snip to finish
+            }
+        }
+
+        // Add event listeners for swiping/moving
+        overlay.addEventListener('touchmove', handleMove);
+        overlay.addEventListener('mousemove', handleMove);
     }
 
     function showError(msg) {

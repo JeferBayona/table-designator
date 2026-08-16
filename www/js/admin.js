@@ -552,6 +552,48 @@ document.addEventListener('DOMContentLoaded', () => {
             activeEventDate.textContent = data.date;
             isTableAssignmentEnabled = data.tableAssignmentEnabled || false;
             
+            // Lock Event Logic
+            const isLocked = data.locked === true;
+            window.activeEventLocked = isLocked;
+            const lockBtn = document.getElementById('lock-event-btn');
+            
+            if (isLocked) {
+                lockBtn.innerHTML = '🔓 Unlock Event';
+                lockBtn.classList.remove('danger-btn');
+                lockBtn.style.backgroundColor = '#6b7280';
+            } else {
+                lockBtn.innerHTML = '🔒 Lock Event';
+                lockBtn.classList.add('danger-btn');
+                lockBtn.style.backgroundColor = '';
+            }
+
+            // Disable controls if locked
+            const registerBtn = document.querySelector('#manual-checkin-form button[type="submit"]');
+            const registerName = document.getElementById('manual-guest-name');
+            const registerTable = document.getElementById('manual-table-number');
+            const modeToggleInput = document.getElementById('assignment-mode-toggle');
+            const saveTablesBtn = document.getElementById('save-tables-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const deleteEventBtn = document.getElementById('delete-event-btn');
+
+            if (isLocked) {
+                if (registerBtn) registerBtn.disabled = true;
+                if (registerName) registerName.disabled = true;
+                if (registerTable) registerTable.disabled = true;
+                if (modeToggleInput) modeToggleInput.disabled = true;
+                if (saveTablesBtn) saveTablesBtn.disabled = true;
+                if (resetBtn) resetBtn.disabled = true;
+                if (deleteEventBtn) deleteEventBtn.disabled = true;
+            } else {
+                if (registerBtn) registerBtn.disabled = false;
+                if (registerName) registerName.disabled = false;
+                if (registerTable) registerTable.disabled = false;
+                if (modeToggleInput) modeToggleInput.disabled = false;
+                if (saveTablesBtn) saveTablesBtn.disabled = false;
+                if (resetBtn) resetBtn.disabled = false;
+                if (deleteEventBtn) deleteEventBtn.disabled = false;
+            }
+            
             // Set dynamic total tables (default 10)
             const dynamicTotalTables = data.totalTables || 10;
             document.getElementById('total-tables-setting').value = dynamicTotalTables;
@@ -587,14 +629,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tableString = data.tableNumber ? `Table ${data.tableNumber}` : 'Unassigned';
 
                 const tr = document.createElement('tr');
+                
+                let actionsHTML = '';
+                if (window.activeEventLocked) {
+                    actionsHTML = '<span style="color: #666; font-size: 12px; font-weight: 600;">Locked</span>';
+                } else {
+                    actionsHTML = `
+                        <button class="edit-btn secondary-btn" data-id="${doc.id}" data-name="${data.name}" data-table="${data.tableNumber || ''}" style="padding: 4px 8px; font-size: 12px; margin-right: 5px;">Edit</button>
+                        <button class="delete-btn primary-btn" data-id="${doc.id}" data-table="${data.tableNumber || ''}" data-name="${data.name}" style="padding: 4px 8px; font-size: 12px; background-color: var(--danger);">Delete</button>
+                    `;
+                }
+                
                 tr.innerHTML = `
                     <td>${data.name}</td>
                     <td>${timeString}</td>
                     <td class="table-col ${isTableAssignmentEnabled ? '' : 'hidden'}">${tableString}</td>
-                    <td>
-                        <button class="edit-btn secondary-btn" data-id="${doc.id}" data-name="${data.name}" data-table="${data.tableNumber || ''}" style="padding: 4px 8px; font-size: 12px; margin-right: 5px;">Edit</button>
-                        <button class="delete-btn primary-btn" data-id="${doc.id}" data-table="${data.tableNumber || ''}" data-name="${data.name}" style="padding: 4px 8px; font-size: 12px; background-color: var(--danger);">Delete</button>
-                    </td>
+                    <td>${actionsHTML}</td>
                 `;
                 attendanceListBody.appendChild(tr);
             });
@@ -731,6 +781,23 @@ document.addEventListener('DOMContentLoaded', () => {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+    });
+
+    // Toggles Event Locking
+    document.getElementById('lock-event-btn').addEventListener('click', async () => {
+        if (!activeEventId) return;
+        const newState = !window.activeEventLocked;
+        const msg = newState ? 
+            "Are you sure you want to lock this event? No further registrations, edits, or table assignments will be allowed." : 
+            "Unlock this event to allow registrations and edits again?";
+        if (confirm(msg)) {
+            try {
+                await db.collection('events').doc(activeEventId).update({ locked: newState });
+            } catch (err) {
+                console.error("Failed to toggle lock:", err);
+                alert("Error toggling lock.");
+            }
+        }
     });
 
     // Handle Edit / Delete Attendee

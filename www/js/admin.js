@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    if (!db) {
+    if (!firebase.apps.length) {
         alert("Database not configured. Please check js/firebase-config.js");
         return;
     }

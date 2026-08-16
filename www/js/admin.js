@@ -109,9 +109,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle Event Selection
     eventSelect.addEventListener('change', (e) => {
         if (e.target.value) {
+            document.getElementById('welcome-hero').classList.add('hidden');
             loadEvent(e.target.value);
         } else {
             dashboardContent.classList.add('hidden');
+            document.getElementById('welcome-hero').classList.remove('hidden');
             activeEventId = null;
         }
     });

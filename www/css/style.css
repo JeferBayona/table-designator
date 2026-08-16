@@ -172,6 +172,35 @@ header p {
     margin-bottom: 40px;
 }
 
+/* Welcome Hero */
+.welcome-hero {
+    text-align: center;
+    padding: 60px 20px;
+    margin-top: 20px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px dashed var(--border-color);
+}
+
+.hero-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.welcome-hero h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 12px;
+}
+
+.welcome-hero p {
+    font-size: 16px;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
 .admin-actions {
     display: flex;
     gap: 12px;

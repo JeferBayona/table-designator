@@ -29,12 +29,39 @@
                     <!-- Dynamic options here -->
                 </select>
             </div>
-            <button id="create-event-btn" class="primary-btn header-btn">+ Create Event</button>
+            <div style="display: flex; gap: 10px;">
+                <button id="analytics-btn" class="secondary-btn header-btn" style="background-color: var(--secondary-color); color: white; border: none;">📊 Data Analytics</button>
+                <button id="create-event-btn" class="primary-btn header-btn">+ Create Event</button>
+            </div>
         </div>
     </div>
 
     <div class="admin-container">
         
+        <!-- Analytics Content (Hidden by default) -->
+        <div id="analytics-content" class="hidden card" style="margin-bottom: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1>Event Analytics</h1>
+                <button id="close-analytics-btn" class="secondary-btn">Close</button>
+            </div>
+            <div class="table-responsive">
+                <table class="master-list-table">
+                    <thead>
+                        <tr>
+                            <th>Event Name (ID)</th>
+                            <th>Event Title</th>
+                            <th>Date</th>
+                            <th>Total Attendees</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analytics-list-body">
+                        <!-- Populated dynamically -->
+                        <tr><td colspan="4" style="text-align: center;">Loading analytics...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Welcome Hero (Visible when no event selected) -->
         <div id="welcome-hero" class="welcome-hero card">
             <img src="assets/logo.jpg" alt="Ikthus Logo" style="width: 120px; height: 120px; border-radius: 24px; margin-bottom: 20px;">

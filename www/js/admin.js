@@ -26,6 +26,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const createEventForm = document.getElementById('create-event-form');
     const submitEventBtn = document.getElementById('submit-event-btn');
 
+    const analyticsBtn = document.getElementById('analytics-btn');
+    const analyticsContent = document.getElementById('analytics-content');
+    const closeAnalyticsBtn = document.getElementById('close-analytics-btn');
+    const analyticsListBody = document.getElementById('analytics-list-body');
+    const welcomeHero = document.getElementById('welcome-hero');
+
+    // Analytics Toggle
+    analyticsBtn.addEventListener('click', async () => {
+        dashboardContent.classList.add('hidden');
+        welcomeHero.classList.add('hidden');
+        analyticsContent.classList.remove('hidden');
+        
+        analyticsListBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Loading analytics...</td></tr>';
+        
+        try {
+            const eventsSnapshot = await db.collection('events').get();
+            analyticsListBody.innerHTML = '';
+            
+            if (eventsSnapshot.empty) {
+                analyticsListBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No events found.</td></tr>';
+                return;
+            }
+
+            for (const doc of eventsSnapshot.docs) {
+                const data = doc.data();
+                const eventId = doc.id;
+                
+                // Get attendee count
+                // Firebase Web SDK v8/compat doesn't have an easy aggregate .count(), so we fetch the collection
+                // This is fine for small/medium events.
+                const attendeesSnapshot = await db.collection('events').doc(eventId).collection('attendees').get();
+                const count = attendeesSnapshot.size;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${eventId}</strong></td>
+                    <td>${data.title}</td>
+                    <td>${data.date}</td>
+                    <td><span style="font-weight: bold; color: var(--primary-color);">${count}</span></td>
+                `;
+                analyticsListBody.appendChild(tr);
+            }
+        } catch (err) {
+            console.error("Error loading analytics:", err);
+            analyticsListBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">Failed to load analytics.</td></tr>';
+        }
+    });
+
+    closeAnalyticsBtn.addEventListener('click', () => {
+        analyticsContent.classList.add('hidden');
+        if (activeEventId) {
+            dashboardContent.classList.remove('hidden');
+        } else {
+            welcomeHero.classList.remove('hidden');
+        }
+    });
+
     // Dashboard Elements
     const tablesGrid = document.getElementById('tables-grid');
     const totalGuestsCount = document.getElementById('total-guests-count');
@@ -118,6 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle Event Selection
     eventSelect.addEventListener('change', (e) => {
+        analyticsContent.classList.add('hidden');
         if (e.target.value) {
             document.getElementById('welcome-hero').classList.add('hidden');
             loadEvent(e.target.value);

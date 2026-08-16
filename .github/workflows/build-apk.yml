@@ -4,6 +4,9 @@ on:
   push:
     branches: [ "master", "main" ]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -47,3 +50,11 @@ jobs:
       with:
         name: table-designator-release.apk
         path: android/app/build/outputs/apk/release/app-release.apk
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: latest
+        name: Latest Release
+        files: android/app/build/outputs/apk/release/app-release.apk
+

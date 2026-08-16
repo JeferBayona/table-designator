@@ -112,12 +112,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function assignRandomTable(guestName, evId) {
         return await db.runTransaction(async (transaction) => {
             const tablesRef = db.collection('events').doc(evId).collection('tables');
-            const querySnapshot = await transaction.get(tablesRef);
+            
+            // In the Firebase Web Client SDK, transaction.get() only accepts a DocumentReference, not a Query/Collection.
+            // So we explicitly create references for all 10 tables and read them concurrently.
+            const tableRefs = [];
+            for (let i = 1; i <= TOTAL_TABLES; i++) {
+                tableRefs.push(tablesRef.doc(i.toString()));
+            }
+
+            const snapshots = await Promise.all(tableRefs.map(ref => transaction.get(ref)));
+            
             let availableTables = [];
             let existingTablesData = {};
 
-            querySnapshot.forEach(doc => {
-                existingTablesData[doc.id] = doc.data();
+            snapshots.forEach((doc, index) => {
+                const tableId = (index + 1).toString();
+                if (doc.exists) {
+                    existingTablesData[tableId] = doc.data();
+                }
             });
 
             for (let i = 1; i <= TOTAL_TABLES; i++) {

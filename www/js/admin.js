@@ -152,9 +152,9 @@ document.addEventListener('DOMContentLoaded', () => {
             snapshot.forEach(doc => {
                 const data = doc.data();
                 const tr = document.createElement('tr');
-                let actions = '';
+                let actions = `<button class="edit-admin-btn secondary-btn" data-id="${doc.id}" data-pw="${data.password}">Edit</button>`;
                 if (doc.id !== 'jef') {
-                    actions = `<button class="delete-admin-btn danger-btn" data-id="${doc.id}">Delete</button>`;
+                    actions += ` <button class="delete-admin-btn danger-btn" data-id="${doc.id}">Delete</button>`;
                 }
                 tr.innerHTML = `
                     <td>${doc.id}</td>
@@ -171,6 +171,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const id = e.target.getAttribute('data-id');
             if (confirm(`Are you sure you want to delete admin '${id}'?`)) {
                 await db.collection('admins').doc(id).delete();
+            }
+        }
+        if (e.target.classList.contains('edit-admin-btn')) {
+            const id = e.target.getAttribute('data-id');
+            const currentPw = e.target.getAttribute('data-pw');
+            
+            const newPassword = prompt(`Enter new password for ${id}:`, currentPw);
+            if (newPassword && newPassword.trim() !== "") {
+                try {
+                    await db.collection('admins').doc(id).update({ password: newPassword.trim() });
+                    alert(`Password updated for ${id}.`);
+                } catch (err) {
+                    console.error("Error updating password", err);
+                    alert("Failed to update password.");
+                }
             }
         }
     });
@@ -878,4 +893,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+});
 });

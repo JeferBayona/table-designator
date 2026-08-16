@@ -14,6 +14,169 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- Authentication System ---
+    const loginScreen = document.getElementById('login-screen');
+    const dashboardWrapper = document.getElementById('dashboard-wrapper');
+    const loginForm = document.getElementById('login-form');
+    const logoutBtn = document.getElementById('logout-btn');
+    const superuserBtn = document.getElementById('superuser-btn');
+    const superuserContent = document.getElementById('superuser-content');
+    const closeSuperuserBtn = document.getElementById('close-superuser-btn');
+    const createAdminForm = document.getElementById('create-admin-form');
+    const adminsListBody = document.getElementById('admins-list-body');
+
+    let currentUser = null;
+
+    // Seed Superuser on load
+    async function seedSuperuser() {
+        try {
+            const suRef = db.collection('admins').doc('jef');
+            const doc = await suRef.get();
+            if (!doc.exists) {
+                await suRef.set({ password: 'passme.123', role: 'superuser' });
+                console.log("Superuser seeded.");
+            }
+        } catch (err) {
+            console.error("Error seeding superuser:", err);
+        }
+    }
+    seedSuperuser();
+
+    function showDashboard() {
+        loginScreen.classList.add('hidden');
+        dashboardWrapper.classList.remove('hidden');
+        if (currentUser && currentUser.role === 'superuser') {
+            superuserBtn.classList.remove('hidden');
+        }
+        loadEvents(); // Load events only after login
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('adminSession');
+        currentUser = null;
+        dashboardWrapper.classList.add('hidden');
+        loginScreen.classList.remove('hidden');
+        document.getElementById('login-username').value = '';
+        document.getElementById('login-password').value = '';
+    }
+
+    logoutBtn.addEventListener('click', handleLogout);
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const u = document.getElementById('login-username').value.trim();
+        const p = document.getElementById('login-password').value;
+        const btn = document.getElementById('login-btn');
+        btn.disabled = true;
+        btn.textContent = 'Authenticating...';
+
+        try {
+            const doc = await db.collection('admins').doc(u).get();
+            if (doc.exists && doc.data().password === p) {
+                currentUser = { username: u, role: doc.data().role };
+                localStorage.setItem('adminSession', JSON.stringify(currentUser));
+                showDashboard();
+            } else {
+                alert("Invalid username or password.");
+            }
+        } catch (err) {
+            console.error("Login error:", err);
+            alert("Error logging in.");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Login';
+        }
+    });
+
+    // Check session on load
+    const savedSession = localStorage.getItem('adminSession');
+    if (savedSession) {
+        currentUser = JSON.parse(savedSession);
+        showDashboard();
+    } else {
+        // Must stay on login screen
+        loginScreen.classList.remove('hidden');
+    }
+
+    // Superuser Panel Logic
+    superuserBtn.addEventListener('click', () => {
+        dashboardContent.classList.add('hidden');
+        welcomeHero.classList.add('hidden');
+        if(document.getElementById('analytics-content')) document.getElementById('analytics-content').classList.add('hidden');
+        superuserContent.classList.remove('hidden');
+        loadAdmins();
+    });
+
+    closeSuperuserBtn.addEventListener('click', () => {
+        superuserContent.classList.add('hidden');
+        if (!activeEventId) welcomeHero.classList.remove('hidden');
+        else dashboardContent.classList.remove('hidden');
+    });
+
+    createAdminForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submit-admin-btn');
+        btn.disabled = true;
+        btn.textContent = 'Creating...';
+        
+        const username = document.getElementById('new-admin-username').value.trim();
+        const password = document.getElementById('new-admin-password').value;
+
+        try {
+            const doc = await db.collection('admins').doc(username).get();
+            if (doc.exists) {
+                alert("Admin username already exists!");
+            } else {
+                await db.collection('admins').doc(username).set({ password, role: 'admin' });
+                alert("Admin created successfully!");
+                document.getElementById('new-admin-username').value = '';
+                document.getElementById('new-admin-password').value = '';
+                loadAdmins();
+            }
+        } catch (err) {
+            console.error("Error creating admin:", err);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Create Account';
+        }
+    });
+
+    function loadAdmins() {
+        adminsListBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Loading admins...</td></tr>';
+        db.collection('admins').onSnapshot(snapshot => {
+            adminsListBody.innerHTML = '';
+            if (snapshot.empty) {
+                adminsListBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">No admins found.</td></tr>';
+                return;
+            }
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const tr = document.createElement('tr');
+                let actions = '';
+                if (doc.id !== 'jef') {
+                    actions = `<button class="delete-admin-btn danger-btn" data-id="${doc.id}">Delete</button>`;
+                }
+                tr.innerHTML = `
+                    <td>${doc.id}</td>
+                    <td>${data.role}</td>
+                    <td>${actions}</td>
+                `;
+                adminsListBody.appendChild(tr);
+            });
+        });
+    }
+
+    adminsListBody.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('delete-admin-btn')) {
+            const id = e.target.getAttribute('data-id');
+            if (confirm(`Are you sure you want to delete admin '${id}'?`)) {
+                await db.collection('admins').doc(id).delete();
+            }
+        }
+    });
+    // --- End Authentication System ---
+
+
     // Event Elements
     const eventSelect = document.getElementById('event-select');
     const createEventBtn = document.getElementById('create-event-btn');
@@ -139,42 +302,46 @@ document.addEventListener('DOMContentLoaded', () => {
     let unsubEvent = null;
 
     // Load Events
-    db.collection('events').onSnapshot(snapshot => {
-        const currentVal = eventSelect.value;
-        eventSelect.innerHTML = '<option value="">-- Select an Event --</option>';
-        
-        let docs = [];
-        snapshot.forEach(doc => docs.push(doc));
-        // Sort descending by createdAt. Missing createdAt defaults to 0 (oldest).
-        docs.sort((a, b) => {
-            const dataA = a.data();
-            const dataB = b.data();
+    let unsubEvents = null;
+    function loadEvents() {
+        if (unsubEvents) return; // Prevent duplicate listeners
+        unsubEvents = db.collection('events').onSnapshot(snapshot => {
+            const currentVal = eventSelect.value;
+            eventSelect.innerHTML = '<option value="">-- Select an Event --</option>';
             
-            const getTime = (val) => {
-                if (!val) return 0;
-                if (typeof val.toMillis === 'function') return val.toMillis();
-                if (typeof val.getTime === 'function') return val.getTime();
-                if (val.seconds) return val.seconds * 1000;
-                return 0;
-            };
+            let docs = [];
+            snapshot.forEach(doc => docs.push(doc));
+            // Sort descending by createdAt. Missing createdAt defaults to 0 (oldest).
+            docs.sort((a, b) => {
+                const dataA = a.data();
+                const dataB = b.data();
+                
+                const getTime = (val) => {
+                    if (!val) return 0;
+                    if (typeof val.toMillis === 'function') return val.toMillis();
+                    if (typeof val.getTime === 'function') return val.getTime();
+                    if (val.seconds) return val.seconds * 1000;
+                    return 0;
+                };
 
-            const timeA = getTime(dataA.createdAt);
-            const timeB = getTime(dataB.createdAt);
-            return timeB - timeA;
-        });
-        
-        docs.forEach(doc => {
-            const data = doc.data();
-            const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = data.title;
-            eventSelect.appendChild(option);
-        });
+                const timeA = getTime(dataA.createdAt);
+                const timeB = getTime(dataB.createdAt);
+                return timeB - timeA;
+            });
+            
+            docs.forEach(doc => {
+                const data = doc.data();
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = data.title;
+                eventSelect.appendChild(option);
+            });
 
-        if (currentVal && snapshot.docs.find(d => d.id === currentVal)) {
-            eventSelect.value = currentVal;
-        }
-    });
+            if (currentVal && snapshot.docs.find(d => d.id === currentVal)) {
+                eventSelect.value = currentVal;
+            }
+        });
+    }
 
     // Create Event Handlers
     createEventBtn.addEventListener('click', () => createEventModal.classList.remove('hidden'));

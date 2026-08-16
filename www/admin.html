@@ -16,48 +16,115 @@
 </head>
 <body class="admin-body">
 
-    <!-- Sticky Top App Bar -->
-    <div class="app-top-bar">
-        <div class="top-bar-content">
-            <div class="app-branding">
-                <img src="assets/logo.jpg" alt="Logo" class="app-logo">
-                <h2>Ikthus Event Organizer</h2>
-            </div>
-            <div class="select-wrapper">
-                <select id="event-select">
-                    <option value="">-- Select an Event --</option>
-                    <!-- Dynamic options here -->
-                </select>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button id="analytics-btn" class="secondary-btn header-btn" style="background-color: var(--secondary-color); color: white; border: none;">📊 Data Analytics</button>
-                <button id="create-event-btn" class="primary-btn header-btn">+ Create Event</button>
-            </div>
+    <!-- Login Screen -->
+    <div id="login-screen" style="display: flex; justify-content: center; align-items: center; height: 100vh; background: var(--bg-color);">
+        <div class="card" style="width: 100%; max-width: 400px; text-align: center;">
+            <img src="assets/logo.jpg" alt="Logo" style="width: 100px; height: 100px; border-radius: 20px; margin-bottom: 20px;">
+            <h2 style="margin-bottom: 20px;">Admin Login</h2>
+            <form id="login-form">
+                <div class="form-group" style="text-align: left;">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" required>
+                </div>
+                <div class="form-group" style="text-align: left;">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" id="login-btn" class="primary-btn" style="width: 100%; margin-top: 10px;">Login</button>
+            </form>
         </div>
     </div>
 
-    <div class="admin-container">
-        
-        <!-- Analytics Content (Hidden by default) -->
-        <div id="analytics-content" class="hidden card" style="margin-bottom: 30px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h1>Event Analytics</h1>
-                <button id="close-analytics-btn" class="secondary-btn">Close</button>
+    <!-- Main Dashboard Wrapper -->
+    <div id="dashboard-wrapper" class="hidden">
+        <!-- Sticky Top App Bar -->
+        <div class="app-top-bar">
+            <div class="top-bar-content">
+                <div class="app-branding">
+                    <img src="assets/logo.jpg" alt="Logo" class="app-logo">
+                    <h2>Ikthus Event Organizer</h2>
+                </div>
+                <div class="select-wrapper">
+                    <select id="event-select">
+                        <option value="">-- Select an Event --</option>
+                        <!-- Dynamic options here -->
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button id="superuser-btn" class="secondary-btn header-btn hidden" style="background-color: #8b5cf6; color: white; border: none;">⚙️ Superuser</button>
+                    <button id="analytics-btn" class="secondary-btn header-btn" style="background-color: var(--secondary-color); color: white; border: none;">📊 Data Analytics</button>
+                    <button id="create-event-btn" class="primary-btn header-btn">+ Create Event</button>
+                    <button id="logout-btn" class="secondary-btn header-btn" style="border: 1px solid var(--border-color); background: transparent; color: var(--text-color);">Logout</button>
+                </div>
             </div>
-            <div class="table-responsive">
-                <table class="master-list-table">
-                    <thead>
-                        <tr>
-                            <th>Event Name (ID)</th>
-                            <th>Event Title</th>
-                            <th>Date</th>
-                            <th>Total Attendees</th>
-                        </tr>
-                    </thead>
-                    <tbody id="analytics-list-body">
-                        <!-- Populated dynamically -->
-                        <tr><td colspan="4" style="text-align: center;">Loading analytics...</td></tr>
-                    </tbody>
+        </div>
+
+        <div class="admin-container">
+            
+            <!-- Superuser Settings Content (Hidden by default) -->
+            <div id="superuser-content" class="hidden card" style="margin-bottom: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h1>Superuser Settings</h1>
+                    <button id="close-superuser-btn" class="secondary-btn">Close</button>
+                </div>
+                
+                <div class="dashboard-grid">
+                    <div class="card" style="box-shadow: none; border: 1px solid var(--border-color);">
+                        <h3>Create Admin Account</h3>
+                        <form id="create-admin-form" style="margin-top: 15px;">
+                            <div class="form-group">
+                                <label for="new-admin-username">Username</label>
+                                <input type="text" id="new-admin-username" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="new-admin-password">Password</label>
+                                <input type="text" id="new-admin-password" required>
+                            </div>
+                            <button type="submit" id="submit-admin-btn" class="primary-btn" style="width: 100%;">Create Account</button>
+                        </form>
+                    </div>
+
+                    <div class="card" style="box-shadow: none; border: 1px solid var(--border-color);">
+                        <h3>Existing Admins</h3>
+                        <div class="table-responsive" style="margin-top: 15px;">
+                            <table class="master-list-table">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Role</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admins-list-body">
+                                    <!-- Populated dynamically -->
+                                    <tr><td colspan="3" style="text-align: center;">Loading admins...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Content (Hidden by default) -->
+            <div id="analytics-content" class="hidden card" style="margin-bottom: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h1>Event Analytics</h1>
+                    <button id="close-analytics-btn" class="secondary-btn">Close</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="master-list-table">
+                        <thead>
+                            <tr>
+                                <th>Event Name (ID)</th>
+                                <th>Event Title</th>
+                                <th>Date</th>
+                                <th>Total Attendees</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analytics-list-body">
+                            <!-- Populated dynamically -->
+                            <tr><td colspan="4" style="text-align: center;">Loading analytics...</td></tr>
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -212,7 +279,9 @@
                 <button type="submit" id="submit-edit-attendee-btn" class="primary-btn" style="width: 100%; margin-top: 10px;">Save Changes</button>
             </form>
         </div>
+        </div>
     </div>
+    <!-- End Dashboard Wrapper -->
 
     <script src="js/firebase-config.js"></script>
     <script src="js/admin.js"></script>

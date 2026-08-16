@@ -45,8 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function showDashboard() {
         loginScreen.classList.add('hidden');
         dashboardWrapper.classList.remove('hidden');
-        if (currentUser && currentUser.role === 'superuser') {
+        // Ensure ONLY 'jef' is granted Superuser access
+        if (currentUser && currentUser.username === 'jef') {
             superuserBtn.classList.remove('hidden');
+        } else {
+            superuserBtn.classList.add('hidden');
         }
         loadEvents(); // Load events only after login
     }

@@ -4,12 +4,12 @@
 // 3. Add a Web App (the </> icon)
 // 4. Copy the firebaseConfig object below
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyBq5GQ7uFZ2myMiK8xp2Apej5_c_1Yvirk",
+    authDomain: "oikos-young-pro.firebaseapp.com",
+    projectId: "oikos-young-pro",
+    storageBucket: "oikos-young-pro.firebasestorage.app",
+    messagingSenderId: "770143984762",
+    appId: "1:770143984762:web:9c58203a740ecbbbd76fc3"
 };
 
 // Initialize Firebase

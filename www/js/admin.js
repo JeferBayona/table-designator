@@ -283,11 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!activeEventId) return;
         qrModal.classList.remove('hidden');
         
-        let appUrl = window.location.href.replace('admin.html', 'index.html');
-        if (!appUrl.includes('index.html')) {
-            appUrl += appUrl.endsWith('/') ? 'index.html' : '/index.html';
-        }
-        appUrl += `?eventId=${activeEventId}`;
+        let appUrl = `https://JeferBayona.github.io/table-designator/?eventId=${activeEventId}`;
         
         qrUrlDisplay.textContent = appUrl;
 

@@ -280,6 +280,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Delete Event
+    document.getElementById('delete-event-btn').addEventListener('click', async () => {
+        if (!activeEventId) return;
+
+        const confirmDelete = confirm("Are you sure you want to completely DELETE this event? This action cannot be undone.");
+        if (!confirmDelete) return;
+
+        try {
+            const eventRef = db.collection('events').doc(activeEventId);
+            const batch = db.batch();
+            
+            const attendeesSnapshot = await eventRef.collection('attendees').get();
+            attendeesSnapshot.forEach(doc => batch.delete(doc.ref));
+
+            const tablesSnapshot = await eventRef.collection('tables').get();
+            tablesSnapshot.forEach(doc => batch.delete(doc.ref));
+
+            batch.delete(eventRef);
+            await batch.commit();
+
+            alert("Event successfully deleted.");
+            
+            document.querySelector(`#event-select option[value="${activeEventId}"]`).remove();
+            eventSelect.value = "";
+            activeEventId = null;
+            dashboardContent.classList.add('hidden');
+            document.getElementById('welcome-hero').classList.remove('hidden');
+
+            if (unsubEvent) unsubEvent();
+            if (unsubAttendees) unsubAttendees();
+            if (unsubTables) unsubTables();
+        } catch (error) {
+            console.error("Error deleting event:", error);
+            alert("Failed to delete event.");
+        }
+    });
+
     // QR Code
     showQrBtn.addEventListener('click', () => {
         if (!activeEventId) return;

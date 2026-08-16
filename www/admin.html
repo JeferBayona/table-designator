@@ -54,7 +54,6 @@
                     <button id="superuser-btn" class="secondary-btn header-btn hidden" style="background-color: #8b5cf6; color: white; border: none;">⚙️ Superuser</button>
                     <button id="analytics-btn" class="secondary-btn header-btn" style="background-color: var(--secondary-color); color: white; border: none;">📊 Data Analytics</button>
                     <button id="create-event-btn" class="primary-btn header-btn">+ Create Event</button>
-                    <button id="edit-profile-btn" class="secondary-btn header-btn" style="border: 1px solid var(--border-color); background: transparent; color: var(--text-color);">Edit Profile</button>
                     <button id="logout-btn" class="secondary-btn header-btn" style="border: 1px solid var(--border-color); background: transparent; color: var(--text-color);">Logout</button>
                 </div>
             </div>
@@ -228,25 +227,6 @@
         </div>
     </div>
 
-    <!-- Edit Profile Modal -->
-    <div id="edit-profile-modal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-btn" id="close-edit-profile">&times;</span>
-            <h2>Edit Profile</h2>
-            <form id="edit-profile-form" style="margin-top: 20px;">
-                <div class="form-group">
-                    <label for="profile-username">Username</label>
-                    <input type="text" id="profile-username" required>
-                    <small style="color: #666;">Note: Superuser 'jef' cannot change their username.</small>
-                </div>
-                <div class="form-group">
-                    <label for="profile-password">New Password</label>
-                    <input type="text" id="profile-password" required>
-                </div>
-                <button type="submit" id="submit-profile-btn" class="primary-btn">Save Changes</button>
-            </form>
-        </div>
-    </div>
     
     <!-- Create Event Modal -->
     <div id="create-event-modal" class="modal hidden">

@@ -182,13 +182,17 @@ document.addEventListener('DOMContentLoaded', () => {
             snapshot.forEach(doc => tablesData[doc.id] = doc.data());
             tablesGrid.innerHTML = ''; 
 
-            for (let i = 1; i <= TOTAL_TABLES; i++) {
+            // Calculate max table number based on data, defaulting to at least TOTAL_TABLES (10)
+            const tableIds = Object.keys(tablesData).map(id => parseInt(id, 10));
+            const maxTable = Math.max(TOTAL_TABLES, ...tableIds, 0);
+
+            for (let i = 1; i <= maxTable; i++) {
                 const tableId = i.toString();
                 const data = tablesData[tableId] || { count: 0, guests: [] };
                 if (data.count === MAX_CAPACITY) fullTables++;
                 renderTableCard(tableId, data);
             }
-            tablesFilledCount.textContent = `${fullTables} / ${TOTAL_TABLES}`;
+            tablesFilledCount.textContent = `${fullTables} / ${maxTable}`;
         });
     }
 
@@ -340,5 +344,59 @@ document.addEventListener('DOMContentLoaded', () => {
     closeQr.addEventListener('click', () => qrModal.classList.add('hidden'));
     window.addEventListener('click', (e) => {
         if (e.target === qrModal) qrModal.classList.add('hidden');
+    });
+
+    // Manual Check-In
+    document.getElementById('manual-checkin-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!activeEventId) return;
+
+        const nameInput = document.getElementById('manual-guest-name');
+        const tableInput = document.getElementById('manual-table-number');
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+
+        const guestName = nameInput.value.trim();
+        const tableNumber = tableInput.value.trim();
+
+        if (!guestName) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding...';
+
+        try {
+            if (tableNumber) {
+                // Assign to specific table (bypassing capacity limits for manual overrides)
+                await db.runTransaction(async (transaction) => {
+                    const tableRef = db.collection('events').doc(activeEventId).collection('tables').doc(tableNumber);
+                    // Create refs up to tableNumber to avoid collection queries
+                    const tableDoc = await transaction.get(tableRef);
+                    
+                    const tableData = tableDoc.exists ? tableDoc.data() : { count: 0, guests: [] };
+                    
+                    transaction.set(tableRef, {
+                        count: tableData.count + 1,
+                        guests: [...tableData.guests, guestName]
+                    });
+                });
+            }
+
+            // Add to attendees list
+            await db.collection('events').doc(activeEventId).collection('attendees').add({
+                name: guestName,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                tableNumber: tableNumber || null
+            });
+
+            // Reset form
+            nameInput.value = '';
+            tableInput.value = '';
+            alert("Guest added successfully!");
+        } catch (error) {
+            console.error("Error adding guest manually:", error);
+            alert("Failed to add guest manually.");
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Add Person';
+        }
     });
 });

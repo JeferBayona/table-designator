@@ -71,6 +71,22 @@
                 </div>
             </div>
 
+            <!-- Manual Check-in Section -->
+            <div class="manual-checkin-section card" style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px; font-size: 16px; color: var(--text-main);">Manual Guest Addition</h3>
+                <form id="manual-checkin-form" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 2; min-width: 200px;">
+                        <label for="manual-guest-name" style="display: block; margin-bottom: 5px; font-size: 14px;">Guest Name *</label>
+                        <input type="text" id="manual-guest-name" placeholder="John Doe" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <label for="manual-table-number" style="display: block; margin-bottom: 5px; font-size: 14px;">Table # (Optional)</label>
+                        <input type="number" id="manual-table-number" placeholder="e.g. 3" min="1" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                    </div>
+                    <button type="submit" class="primary-btn" style="padding: 10px 20px; white-space: nowrap;">Add Person</button>
+                </form>
+            </div>
+
             <div class="admin-content-grid">
                 <!-- Master Attendance List -->
                 <div class="attendance-section">

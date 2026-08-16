@@ -211,7 +211,8 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let i = 1; i <= maxTable; i++) {
                 const tableId = i.toString();
                 const data = tablesData[tableId] || { count: 0, guests: [] };
-                if (data.count === MAX_CAPACITY) fullTables++;
+                const cap = data.capacity || MAX_CAPACITY;
+                if (data.count >= cap) fullTables++;
                 renderTableCard(tableId, data);
             }
             tablesFilledCount.textContent = `${fullTables} / ${targetTotalTables}`;
@@ -219,11 +220,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderTableCard(tableId, data) {
+        const capacity = data.capacity || MAX_CAPACITY;
         const card = document.createElement('div');
-        card.className = `table-card ${data.count === MAX_CAPACITY ? 'full' : (data.count > 0 ? 'active' : '')}`;
+        card.className = `table-card ${data.count >= capacity ? 'full' : (data.count > 0 ? 'active' : '')}`;
         
         let guestsHtml = '';
-        for (let i = 0; i < MAX_CAPACITY; i++) {
+        for (let i = 0; i < capacity; i++) {
             if (i < data.count) {
                 guestsHtml += `<li>${data.guests[i]}</li>`;
             } else {
@@ -232,9 +234,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         card.innerHTML = `
-            <div class="table-header">
-                <h3>Table ${tableId}</h3>
-                <span class="table-count">${data.count}/${MAX_CAPACITY}</span>
+            <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0;">Table ${tableId}</h3>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <span class="table-count" style="margin: 0;">${data.count}/${capacity}</span>
+                    <button class="edit-capacity-btn" data-id="${tableId}" data-cap="${capacity}" style="background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 14px;" title="Edit Capacity">✎</button>
+                </div>
             </div>
             <ul class="guest-list">
                 ${guestsHtml}
@@ -242,6 +247,38 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         tablesGrid.appendChild(card);
     }
+
+    // Handle Table Grid Actions (like Edit Capacity)
+    tablesGrid.addEventListener('click', (e) => {
+        if (!activeEventId) return;
+
+        // Traverse up to find the button if an icon was clicked
+        let target = e.target;
+        while (target && target !== tablesGrid && !target.classList.contains('edit-capacity-btn')) {
+            target = target.parentElement;
+        }
+
+        if (target && target.classList.contains('edit-capacity-btn')) {
+            const tableId = target.getAttribute('data-id');
+            const currentCap = target.getAttribute('data-cap');
+
+            const newCapRaw = prompt(`Enter new capacity for Table ${tableId}:`, currentCap);
+            if (newCapRaw === null) return;
+            const newCap = parseInt(newCapRaw, 10);
+
+            if (isNaN(newCap) || newCap < 1) {
+                alert("Please enter a valid number greater than 0.");
+                return;
+            }
+
+            db.collection('events').doc(activeEventId).collection('tables').doc(tableId).set({
+                capacity: newCap
+            }, { merge: true }).catch(err => {
+                console.error("Error updating table capacity:", err);
+                alert("Failed to update capacity.");
+            });
+        }
+    });
 
     // Toggle Mode
     modeToggle.addEventListener('change', (e) => {

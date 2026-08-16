@@ -158,8 +158,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             for (let i = 1; i <= targetTotalTables; i++) {
                 const tableId = i.toString();
                 const tableData = existingTablesData[tableId] || { count: 0, guests: [] };
+                const capacity = tableData.capacity || MAX_CAPACITY;
                 
-                if (tableData.count < MAX_CAPACITY) {
+                if (tableData.count < capacity) {
                     availableTables.push(tableId);
                 }
             }

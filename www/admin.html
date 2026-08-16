@@ -99,9 +99,12 @@
 
             <div class="admin-content-grid">
                 <!-- Master Attendance List -->
-                <div class="attendance-section">
-                    <h2>Attendance List</h2>
-                    <div class="table-responsive">
+                <details class="attendance-section" style="padding: 20px; background: var(--card-bg); border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                    <summary style="cursor: pointer; font-size: 20px; font-weight: bold; margin-bottom: 10px; list-style: none; display: flex; align-items: center; justify-content: space-between;">
+                        Attendance List
+                        <span style="font-size: 14px; font-weight: normal; color: var(--text-muted);">(Click to toggle)</span>
+                    </summary>
+                    <div class="table-responsive" style="margin-top: 15px;">
                         <table class="master-list-table">
                             <thead>
                                 <tr>
@@ -116,7 +119,7 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </details>
 
                 <!-- Table Layout -->
                 <div class="tables-section hidden" id="tables-section-container">

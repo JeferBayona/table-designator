@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById(`string-${cutTarget}-bottom`).classList.add('cut');
                 document.getElementById('cut-instruction').classList.add('hidden');
 
-                // Sequence the ball drop
+                // Wait for the heart to fall (1s animation) before showing fishbowl
                 setTimeout(() => {
                     scissor.style.opacity = 0;
                     
@@ -308,16 +308,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const juggleText = document.getElementById('juggle-text');
                     juggleText.classList.remove('hidden');
                     
-                    // Generate fake balls to bounce around
+                    // Generate fake balls to bounce around completely randomly
                     const lotteryBallsContainer = document.getElementById('lottery-balls');
                     lotteryBallsContainer.innerHTML = '';
-                    for (let i = 0; i < 12; i++) {
+                    for (let i = 0; i < 15; i++) {
                         const ball = document.createElement('div');
                         ball.className = 'lottery-ball';
                         ball.textContent = Math.floor(Math.random() * 20) + 1;
-                        // Randomize bounce timing and position
-                        ball.style.animation = `tumble ${0.5 + Math.random() * 0.5}s infinite linear`;
-                        ball.style.animationDelay = `${Math.random()}s`;
+                        
+                        // Random movement using Web Animations API
+                        ball.animate([
+                            { transform: 'translate(0, 0) rotate(0deg)' },
+                            { transform: `translate(${Math.random()*160 - 80}px, ${-Math.random()*150}px) rotate(90deg)` },
+                            { transform: `translate(${Math.random()*160 - 80}px, ${-Math.random()*220}px) rotate(180deg)` },
+                            { transform: `translate(${Math.random()*160 - 80}px, ${-Math.random()*150}px) rotate(270deg)` },
+                            { transform: 'translate(0, 0) rotate(360deg)' }
+                        ], {
+                            duration: 400 + Math.random() * 600,
+                            iterations: Infinity,
+                            direction: 'alternate',
+                            easing: 'ease-in-out'
+                        });
+                        
                         lotteryBallsContainer.appendChild(ball);
                     }
                     
@@ -358,7 +370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             
                         }, 3500); // Slower exit wait
                     }, 3500); // 3.5s for juggling balls to build suspense
-                }, 500); // Time for scissor snip to finish (slowed down)
+                }, 1000); // Wait 1s for the heart to fall down
             }
         }
 

@@ -153,6 +153,10 @@
                     <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
                         <label for="total-tables-setting" style="font-size: 14px; font-weight: 600;">Total Tables:</label>
                         <input type="number" id="total-tables-setting" value="10" min="1" style="width: 80px; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                        
+                        <label for="table-capacity-setting" style="font-size: 14px; font-weight: 600; margin-left: 10px;">Capacity/Table:</label>
+                        <input type="number" id="table-capacity-setting" value="4" min="1" style="width: 80px; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                        
                         <button id="save-tables-btn" class="secondary-btn" style="padding: 6px 12px; font-size: 12px;">Update</button>
                     </div>
                 </div>
@@ -265,6 +269,16 @@
                 <div class="form-group">
                     <label for="event-date">Date</label>
                     <input type="date" id="event-date" required>
+                </div>
+                <div class="form-group" style="display:flex; gap: 15px;">
+                    <div style="flex:1;">
+                        <label for="create-total-tables">Total Tables</label>
+                        <input type="number" id="create-total-tables" value="10" min="1" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                    </div>
+                    <div style="flex:1;">
+                        <label for="create-table-capacity">Capacity/Table</label>
+                        <input type="number" id="create-table-capacity" value="4" min="1" required style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="assignment-style">Assignment Animation</label>

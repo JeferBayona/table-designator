@@ -499,6 +499,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const title = document.getElementById('event-title').value.trim();
         const date = document.getElementById('event-date').value;
         const assignmentStyle = document.getElementById('assignment-style').value;
+        const totalTables = parseInt(document.getElementById('create-total-tables').value, 10) || 10;
+        const tableCapacity = parseInt(document.getElementById('create-table-capacity').value, 10) || 4;
 
         if (!id || !title || !date) return;
         submitEventBtn.disabled = true;
@@ -515,6 +517,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: title,
                 date: date,
                 assignmentStyle: assignmentStyle,
+                totalTables: totalTables,
+                tableCapacity: tableCapacity,
                 tableAssignmentEnabled: false,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
@@ -614,11 +618,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (deleteEventBtn) deleteEventBtn.disabled = false;
             }
             
-            // Set dynamic total tables (default 10)
+            // Set dynamic total tables and capacity (defaults 10 and 4)
             const dynamicTotalTables = data.totalTables || 10;
+            const dynamicTableCapacity = data.tableCapacity || 4;
+            
             document.getElementById('total-tables-setting').value = dynamicTotalTables;
+            document.getElementById('table-capacity-setting').value = dynamicTableCapacity;
+            
             // Store globally so tables listener can use it
             window.currentTotalTables = dynamicTotalTables;
+            window.currentTableCapacity = dynamicTableCapacity;
 
             modeToggle.checked = isTableAssignmentEnabled;
             modeStatusText.textContent = `Random Table Assignment: ${isTableAssignmentEnabled ? 'ON' : 'OFF'}`;
@@ -768,10 +777,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('save-tables-btn').addEventListener('click', () => {
         if (!activeEventId) return;
         const newTotal = parseInt(document.getElementById('total-tables-setting').value, 10);
-        if (newTotal > 0) {
+        const newCapacity = parseInt(document.getElementById('table-capacity-setting').value, 10);
+        
+        if (newTotal > 0 && newCapacity > 0) {
             db.collection('events').doc(activeEventId).update({
-                totalTables: newTotal
-            }).then(() => alert("Total tables updated successfully!"))
+                totalTables: newTotal,
+                tableCapacity: newCapacity
+            }).then(() => alert("Table settings updated successfully!"))
               .catch(err => console.error(err));
         }
     });

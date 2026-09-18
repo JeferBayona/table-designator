@@ -34,8 +34,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    noEventState.classList.remove('hidden');
+    noEventState.innerHTML = '<h2>Loading event...</h2><p>Please wait.</p>';
+
     try {
-        const eventDoc = await db.collection('events').doc(eventId).get();
+        // Add a 7-second timeout to prevent infinite hanging for QR scans on bad connections
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Network timeout")), 7000));
+        const fetchPromise = db.collection('events').doc(eventId).get();
+        const eventDoc = await Promise.race([fetchPromise, timeoutPromise]);
+        
         if (!eventDoc.exists) {
             noEventState.classList.remove('hidden');
             noEventState.innerHTML = '<h2 style="color: var(--danger);">Event Not Found</h2><p>This event does not exist or has been removed.</p>';
@@ -50,6 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (doc.exists) {
                 isTableAssignmentEnabled = doc.data().tableAssignmentEnabled || false;
                 window.currentTotalTables = doc.data().totalTables || 10;
+                window.currentTableCapacity = doc.data().tableCapacity || 4;
                 currentAssignmentStyle = doc.data().assignmentStyle || 'generic';
             }
         });
@@ -66,10 +74,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
+        noEventState.classList.add('hidden');
         appContent.classList.remove('hidden');
     } catch (err) {
         console.error("Error loading event:", err);
-        alert("Could not load event data.");
+        noEventState.classList.remove('hidden');
+        noEventState.innerHTML = '<h2 style="color: var(--danger);">Connection Error</h2><p>Could not load the event. Your connection might be too slow or offline.</p><button onclick="window.location.reload()" class="primary-btn" style="margin-top: 15px;">Try Again</button>';
         return;
     }
 
@@ -134,12 +144,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function assignRandomTable(guestName, evId) {
         return await db.runTransaction(async (transaction) => {
-            const tablesRef = db.collection('events').doc(evId).collection('tables');
+            const eventRef = db.collection('events').doc(evId);
+            const tablesRef = eventRef.collection('tables');
             
-            const targetTotalTables = window.currentTotalTables || TOTAL_TABLES;
+            // Re-fetch event inside transaction to get accurate totalTables
+            const eventDoc = await transaction.get(eventRef);
+            let targetTotalTables = eventDoc.data().totalTables || window.currentTotalTables || 10;
+            const targetCapacity = eventDoc.data().tableCapacity || window.currentTableCapacity || 4;
 
-            // In the Firebase Web Client SDK, transaction.get() only accepts a DocumentReference, not a Query/Collection.
-            // So we explicitly create references for all target tables and read them concurrently.
             const tableRefs = [];
             for (let i = 1; i <= targetTotalTables; i++) {
                 tableRefs.push(tablesRef.doc(i.toString()));
@@ -160,15 +172,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             for (let i = 1; i <= targetTotalTables; i++) {
                 const tableId = i.toString();
                 const tableData = existingTablesData[tableId] || { count: 0, guests: [] };
-                const capacity = tableData.capacity || MAX_CAPACITY;
                 
-                if (tableData.count < capacity) {
+                if (tableData.count < targetCapacity) {
                     availableTables.push(tableId);
                 }
             }
 
-            if (availableTables.length === 0) return null;
+            // If no available tables, auto-expand total tables by 1
+            if (availableTables.length === 0) {
+                targetTotalTables += 1;
+                const newTableId = targetTotalTables.toString();
+                
+                transaction.update(eventRef, { totalTables: targetTotalTables });
+                
+                const newTableRef = tablesRef.doc(newTableId);
+                transaction.set(newTableRef, {
+                    count: 1,
+                    guests: [guestName]
+                });
+                return newTableId;
+            }
 
+            // Normal assignment to random available table
             const randomIdx = Math.floor(Math.random() * availableTables.length);
             const selectedTableId = availableTables[randomIdx];
             const tableRef = tablesRef.doc(selectedTableId);

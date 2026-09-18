@@ -628,6 +628,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Store globally so tables listener can use it
             window.currentTotalTables = dynamicTotalTables;
             window.currentTableCapacity = dynamicTableCapacity;
+            if (typeof renderTablesGrid === 'function') {
+                renderTablesGrid();
+            }
 
             modeToggle.checked = isTableAssignmentEnabled;
             modeStatusText.textContent = `Random Table Assignment: ${isTableAssignmentEnabled ? 'ON' : 'OFF'}`;
@@ -682,30 +685,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Listen to Tables
         unsubTables = db.collection('events').doc(eventId).collection('tables').onSnapshot(snapshot => {
-            let tablesData = {};
-            let fullTables = 0;
-
-            snapshot.forEach(doc => tablesData[doc.id] = doc.data());
-            tablesGrid.innerHTML = ''; 
-
-            const targetTotalTables = window.currentTotalTables || TOTAL_TABLES;
-            // Calculate max table number based on data, defaulting to at least the set target total
-            const tableIds = Object.keys(tablesData).map(id => parseInt(id, 10));
-            const maxTable = Math.max(targetTotalTables, ...tableIds, 0);
-
-            for (let i = 1; i <= maxTable; i++) {
-                const tableId = i.toString();
-                const data = tablesData[tableId] || { count: 0, guests: [] };
-                const cap = data.capacity || MAX_CAPACITY;
-                if (data.count >= cap) fullTables++;
-                renderTableCard(tableId, data);
-            }
-            tablesFilledCount.textContent = `${fullTables} / ${targetTotalTables}`;
+            window.latestTablesData = {};
+            snapshot.forEach(doc => window.latestTablesData[doc.id] = doc.data());
+            renderTablesGrid();
         });
     }
 
-    function renderTableCard(tableId, data) {
-        const capacity = data.capacity || MAX_CAPACITY;
+    function renderTablesGrid() {
+        if (!window.latestTablesData) return;
+        
+        let fullTables = 0;
+        tablesGrid.innerHTML = ''; 
+
+        const targetTotalTables = window.currentTotalTables || TOTAL_TABLES;
+        const currentCapSetting = window.currentTableCapacity || MAX_CAPACITY;
+        
+        const tableIds = Object.keys(window.latestTablesData).map(id => parseInt(id, 10));
+        const maxTable = Math.max(targetTotalTables, ...tableIds, 0);
+
+        for (let i = 1; i <= maxTable; i++) {
+            const tableId = i.toString();
+            const data = window.latestTablesData[tableId] || { count: 0, guests: [] };
+            const cap = data.capacity || currentCapSetting;
+            if (data.count >= cap) fullTables++;
+            renderTableCard(tableId, data, cap);
+        }
+        tablesFilledCount.textContent = `${fullTables} / ${targetTotalTables}`;
+    }
+
+    function renderTableCard(tableId, data, capacity) {
         const card = document.createElement('div');
         card.className = `table-card ${data.count >= capacity ? 'full' : (data.count > 0 ? 'active' : '')}`;
         

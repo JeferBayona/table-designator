@@ -208,7 +208,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    function showResult(tableNumber, name) {
+    function showResult(tableNumber, name, customPhrase = null) {
+        const localKeyPhrase = `assignedPhrase_${eventId}`;
+        
+        if (customPhrase) {
+            localStorage.setItem(localKeyPhrase, customPhrase);
+        } else {
+            customPhrase = localStorage.getItem(localKeyPhrase);
+        }
+
         if (currentAssignmentStyle === 'string_cut' && tableNumber) {
             runStringCutAnimation(tableNumber, name);
         } else {
@@ -218,7 +226,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             displayName.textContent = name;
 
             if (tableNumber) {
-                proceedText.textContent = "Please proceed to your table:";
+                proceedText.textContent = customPhrase || "Please proceed to your table:";
                 tableNumberContainer.classList.remove('hidden');
                 tableNumberDisplay.textContent = tableNumber;
             } else {
@@ -244,6 +252,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         ballNumber.textContent = tableNumber;
 
         let hasCut = false;
+        
+        const JUGGLE_OPTIONS = [
+            { text: "Marupok Ako", result: "Marupok Ka, kaya sa Table" },
+            { text: "Independent Person", result: "Independent Person Ka, kaya sa Table" },
+            { text: "I Need Someone", result: "You Need Someone, kaya sa Table" },
+            { text: "Waiting for God's Best", result: "Waiting for God's Best Ka, kaya sa Table" },
+            { text: "Praying for The One", result: "Praying for The One Ka, kaya sa Table" },
+            { text: "Single and Happy", result: "Single and Happy Ka, kaya sa Table" },
+            { text: "Content in Christ", result: "Content in Christ Ka, kaya sa Table" }
+        ];
 
         function handleMove(e) {
             if (hasCut) return;
@@ -291,8 +309,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // slide bowl up
                     bowlContainer.classList.add('bowl-slide-up');
                     
-                    // drop ball
+                    const juggleText = document.getElementById('juggle-text');
+                    juggleText.classList.remove('hidden');
+                    
+                    // Start juggling words
+                    let juggleInterval = setInterval(() => {
+                        const randomOpt = JUGGLE_OPTIONS[Math.floor(Math.random() * JUGGLE_OPTIONS.length)];
+                        juggleText.textContent = randomOpt.text;
+                    }, 100);
+                    
+                    // drop ball after juggling a bit
                     setTimeout(() => {
+                        clearInterval(juggleInterval);
+                        const finalOpt = JUGGLE_OPTIONS[Math.floor(Math.random() * JUGGLE_OPTIONS.length)];
+                        juggleText.textContent = finalOpt.text;
+                        
                         ballContainer.classList.remove('hidden');
                         ballContainer.querySelector('#ball').classList.add('ball-drop');
                         
@@ -303,10 +334,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                             
                             // fallback to generic result view to show name and number permanently
                             currentAssignmentStyle = 'generic'; 
-                            showResult(tableNumber, name);
+                            showResult(tableNumber, name, finalOpt.result);
                             
                         }, 2500); // Wait for bounce to finish + pause
-                    }, 500);
+                    }, 1500); // Wait 1.5s for juggling before dropping ball
                 }, 300); // Time for scissor snip to finish
             }
         }

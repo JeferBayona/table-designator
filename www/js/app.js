@@ -245,22 +245,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         overlay.classList.remove('hidden');
         
         const scissor = document.getElementById('scissor');
-        const ballContainer = document.getElementById('ball-container');
-        const ballNumber = document.getElementById('ball-number');
-        const bowlContainer = document.getElementById('bowl-container');
+        const winningBallNumber = document.getElementById('winning-ball-number');
         
-        ballNumber.textContent = tableNumber;
+        winningBallNumber.textContent = tableNumber;
 
         let hasCut = false;
         
         const JUGGLE_OPTIONS = [
-            { text: "Marupok Ako", result: "Marupok Ka, kaya sa Table" },
-            { text: "Independent Person", result: "Independent Person Ka, kaya sa Table" },
-            { text: "I Need Someone", result: "You Need Someone, kaya sa Table" },
-            { text: "Waiting for God's Best", result: "Waiting for God's Best Ka, kaya sa Table" },
-            { text: "Praying for The One", result: "Praying for The One Ka, kaya sa Table" },
-            { text: "Single and Happy", result: "Single and Happy Ka, kaya sa Table" },
-            { text: "Content in Christ", result: "Content in Christ Ka, kaya sa Table" }
+            { text: "Marupok Ako", result: "Marupok ako, kaya doon ako sa Table" },
+            { text: "Independent", result: "Independent ako, kaya swak ako sa Table" },
+            { text: "God's Best", result: "Waiting for God's best, mag-rest muna sa Table" },
+            { text: "Single & Happy", result: "Single and happy, kaya parati sa Table" },
+            { text: "Content", result: "Content in Christ, ang the highest ay Table" },
+            { text: "Praying for The One", result: "Praying for The One, for fun sa Table" }
         ];
 
         function handleMove(e) {
@@ -290,27 +287,39 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (cutTarget) {
                 hasCut = true;
                 
-                // Show scissor at coordinate
                 scissor.style.left = `${clientX}px`;
                 scissor.style.top = `${clientY}px`;
                 scissor.classList.remove('hidden');
                 scissor.classList.add('scissor-snip');
                 
-                // Cut the specific string
                 document.getElementById(`string-${cutTarget}-bottom`).classList.add('cut');
-                
-                // Remove instructions
                 document.getElementById('cut-instruction').classList.add('hidden');
 
                 // Sequence the ball drop
                 setTimeout(() => {
                     scissor.style.opacity = 0;
                     
-                    // slide bowl up
-                    bowlContainer.classList.add('bowl-slide-up');
+                    const fishbowlStage = document.getElementById('fishbowl-stage');
+                    fishbowlStage.classList.remove('hidden');
+                    // Force reflow
+                    void fishbowlStage.offsetWidth;
+                    fishbowlStage.classList.add('bowl-slide-up');
                     
                     const juggleText = document.getElementById('juggle-text');
                     juggleText.classList.remove('hidden');
+                    
+                    // Generate fake balls to bounce around
+                    const lotteryBallsContainer = document.getElementById('lottery-balls');
+                    lotteryBallsContainer.innerHTML = '';
+                    for (let i = 0; i < 12; i++) {
+                        const ball = document.createElement('div');
+                        ball.className = 'lottery-ball';
+                        ball.textContent = Math.floor(Math.random() * 20) + 1;
+                        // Randomize bounce timing and position
+                        ball.style.animation = `tumble ${0.5 + Math.random() * 0.5}s infinite linear`;
+                        ball.style.animationDelay = `${Math.random()}s`;
+                        lotteryBallsContainer.appendChild(ball);
+                    }
                     
                     // Start juggling words
                     let juggleInterval = setInterval(() => {
@@ -319,32 +328,37 @@ document.addEventListener('DOMContentLoaded', async () => {
                         juggleText.classList.remove('juggle-flip');
                         void juggleText.offsetWidth; // trigger reflow
                         juggleText.classList.add('juggle-flip');
-                    }, 150); // Slower interval for flip effect to be visible
+                    }, 250); // Slower interval
                     
-                    // drop ball after juggling a bit
+                    // draw out the winning ball
                     setTimeout(() => {
                         clearInterval(juggleInterval);
+                        
+                        // Stop balls tumbling
+                        lotteryBallsContainer.innerHTML = '';
+                        
                         const finalOpt = JUGGLE_OPTIONS[Math.floor(Math.random() * JUGGLE_OPTIONS.length)];
                         juggleText.textContent = finalOpt.text;
                         juggleText.classList.remove('juggle-flip');
                         void juggleText.offsetWidth;
                         juggleText.classList.add('juggle-flip');
                         
-                        ballContainer.classList.remove('hidden');
-                        ballContainer.querySelector('#ball').classList.add('ball-drop');
+                        const winningBall = document.getElementById('winning-ball');
+                        document.getElementById('winning-ball-number').textContent = tableNumber;
+                        winningBall.classList.remove('hidden');
+                        winningBall.classList.add('ball-draw-out');
                         
                         // after animation completes, return to result card
                         setTimeout(() => {
                             overlay.classList.add('hidden');
                             document.getElementById('app-content').classList.remove('hidden');
                             
-                            // fallback to generic result view to show name and number permanently
                             currentAssignmentStyle = 'generic'; 
                             showResult(tableNumber, name, finalOpt.result);
                             
-                        }, 2500); // Wait for bounce to finish + pause
-                    }, 1500); // Wait 1.5s for juggling before dropping ball
-                }, 300); // Time for scissor snip to finish
+                        }, 3500); // Slower exit wait
+                    }, 3500); // 3.5s for juggling balls to build suspense
+                }, 500); // Time for scissor snip to finish (slowed down)
             }
         }
 

@@ -316,13 +316,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     let juggleInterval = setInterval(() => {
                         const randomOpt = JUGGLE_OPTIONS[Math.floor(Math.random() * JUGGLE_OPTIONS.length)];
                         juggleText.textContent = randomOpt.text;
-                    }, 100);
+                        juggleText.classList.remove('juggle-flip');
+                        void juggleText.offsetWidth; // trigger reflow
+                        juggleText.classList.add('juggle-flip');
+                    }, 150); // Slower interval for flip effect to be visible
                     
                     // drop ball after juggling a bit
                     setTimeout(() => {
                         clearInterval(juggleInterval);
                         const finalOpt = JUGGLE_OPTIONS[Math.floor(Math.random() * JUGGLE_OPTIONS.length)];
                         juggleText.textContent = finalOpt.text;
+                        juggleText.classList.remove('juggle-flip');
+                        void juggleText.offsetWidth;
+                        juggleText.classList.add('juggle-flip');
                         
                         ballContainer.classList.remove('hidden');
                         ballContainer.querySelector('#ball').classList.add('ball-drop');
